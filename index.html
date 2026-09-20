@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#f6f8fc" />
     <meta name="color-scheme" content="light dark" />
     <meta name="description" content="World Mood is a playful, privacy-first live map of how the world feels right now." />
     <meta name="keywords" content="world mood, mood map, emotional weather, live mood, anonymous mood journal" />
@@ -27,6 +27,7 @@
         const theme = localStorage.getItem('worldmood-theme') || 'system';
         const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#070a13' : '#f6f8fc');
       } catch (_) {}
     </script>
   </head>

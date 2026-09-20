@@ -1,4 +1,3 @@
-export type Language = 'en' | 'el'
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type ViewKey = 'home' | 'explore' | 'journal' | 'settings'
 export type TimeRange = 'now' | '24h' | '7d' | '30d'
@@ -17,13 +16,13 @@ export interface MoodEntry {
   lng?: number
   countryCode?: string
   createdAt: string
-  source?: 'demo' | 'local' | 'supabase'
+  source?: 'local' | 'supabase'
 }
 
 export interface MoodPoint {
   id: string
-  city: string
-  country: string
+  label: string
+  detail: string
   lat: number
   lng: number
   score: number
@@ -34,9 +33,9 @@ export interface MoodPoint {
 export interface MoodSummary {
   score: number
   label: string
-  emotion: EmotionKey
   responses: number
-  countries: number
-  delta: number
+  mappedAreas: number
+  delta: number | null
   trendingEmotion: EmotionKey
+  latestAt?: string
 }

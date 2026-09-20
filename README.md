@@ -1,29 +1,38 @@
-# World Mood 🌍💜
+# World Mood
 
-**World Mood** is a playful, privacy-first PWA that visualizes the emotional weather of the world. People can check in anonymously, explore a living global mood map, keep a private local journal and share the current world pulse.
+**Version 0.0.1**
 
-> Version: **0.0.1**  
-> Product maturity target: feature-complete foundation, designed like a 1.0 product.
+World Mood is a privacy-first Progressive Web App that turns real anonymous mood check-ins into a live emotional weather map of the world.
 
-## Included in v0.0.1
+The public map contains **no demo, seeded, generated or simulated mood data**. If there are no real submissions, the map stays empty and says so clearly.
 
-- Responsive map-first interface for mobile, tablet, desktop and large screens
-- Animated global mood atmosphere built with SVG, D3 Geo and Natural Earth data
-- Eight emotion states with intensity, optional reason and note
-- Optional coarse location. Browser coordinates are rounded to 0.5 degrees before they enter app state
-- Local private mood journal stored only in the browser
-- Explore dashboard with regional pulse cards and activity rankings
-- Shareable 1080 × 1920 mood card generator using Canvas
-- Greek and English interface
-- Light, Dark and System appearance modes
-- First-run onboarding
-- Full PWA manifest, service worker, offline shell and install flow
-- Custom favicon, app icons, maskable icon, Apple touch icon and social preview artwork
-- SEO metadata, robots.txt and sitemap.xml
+## Product principles
+
+- English-only interface
+- Real community submissions only
+- No account required
+- No public user profiles
+- No precise location storage
+- Notes stay private on the device and are never uploaded
+- Responsive from small phones to ultrawide desktop displays
+- Full light, dark and system appearance modes
+- Installable PWA with offline private journal support
+- Interactive world map with pan, wheel/trackpad zoom, zoom controls and reset
+
+## Features
+
+- Live global mood summary from real backend submissions
+- Time ranges: Now, 24H, 7D and 30D
+- Honest empty states when live data is missing
+- Approximate map areas aggregated from coarse half-degree location buckets
+- Real response count, mapped-area count, most common mood and period-over-period score change
+- Anonymous mood composer with eight emotions, five intensity levels and optional context
+- Private local journal
+- Shareable World Mood card generated from live data only
+- Responsive navigation for mobile, tablet and desktop
+- PWA manifest, service worker, install flow, favicon, app icons and Apple touch icon
 - GitHub Pages deployment workflow
-- Optional Supabase live community backend with SQL schema and Row Level Security
-- Deterministic demo-network fallback, so the public site works before backend credentials are added
-- Accessibility basics, keyboard interactions and reduced-motion support
+- Supabase schema with Row Level Security
 
 ## Local development
 
@@ -36,48 +45,55 @@ Production build:
 
 ```bash
 npm run build
-npm run preview
 ```
 
-## Live community backend
+## Real live data with Supabase
 
-The site works without a backend in demo-network mode. To enable shared community submissions:
+The frontend deliberately does not fall back to fake information when no backend is connected.
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the SQL Editor.
-3. Add repository variable `VITE_SUPABASE_URL`.
-4. Add repository secret `VITE_SUPABASE_ANON_KEY`.
-5. Push to `main` or manually run the Pages workflow.
+2. Open the Supabase SQL Editor.
+3. Run `supabase/schema.sql` once.
+4. In the GitHub repository settings, add:
+   - Actions variable: `VITE_SUPABASE_URL`
+   - Actions secret: `VITE_SUPABASE_ANON_KEY`
+5. Push to `main` or rerun the Pages workflow.
 
-The frontend uses only the public anonymous key. Never place a Supabase service-role key in the client or in GitHub Pages.
+The browser sends only the public Supabase anon key. Never put a service-role key in the frontend or GitHub Pages environment.
 
-## GitHub Pages
+## Public data model
 
-The app is configured for:
+Shared submissions contain:
+
+- mood score
+- emotion
+- intensity
+- optional reason category
+- optional coarse location rounded to a half-degree bucket
+- server timestamp
+
+Free-form journal notes remain only in browser storage and are never uploaded to the public database.
+
+## Deployment
+
+GitHub Actions builds the Vite app and deploys `dist` to GitHub Pages.
+
+Expected project URL:
 
 `https://donacgreece.github.io/World_Mood/`
 
-The Vite base path and PWA scope are already set to `/World_Mood/`.
+## Stack
 
-## Privacy model
+- React
+- TypeScript
+- Vite
+- Vite PWA
+- D3 Geo
+- TopoJSON
+- World Atlas
+- Supabase REST
+- GitHub Pages
 
-World Mood is intentionally account-free. Local journal entries remain on the device. Shared check-ins contain only the selected mood fields and, when explicitly requested by the user, a coarse 0.5-degree location bucket. No precise location is intentionally stored by the application.
+## Privacy note
 
-For a high-traffic public launch, add server-side abuse controls or a Supabase Edge Function in front of anonymous inserts.
-
-## Project structure
-
-```text
-src/
-  components/      UI and product surfaces
-  data/            deterministic demo network
-  lib/             storage, sharing, Supabase adapter and types
-supabase/
-  schema.sql       optional live backend schema
-public/            PWA icons, favicon, logo, social art, SEO files
-.github/workflows/ GitHub Pages CI/CD
-```
-
-## Design principles
-
-World Mood should feel like emotional weather, not analytics software. The map is the hero, interaction is playful and brief, privacy is visible, and the interface avoids diagnostic or medical claims.
+World Mood is not a diagnostic or medical product. It visualizes voluntary, anonymous self-reported check-ins and should not be interpreted as a scientific measurement of an entire population.

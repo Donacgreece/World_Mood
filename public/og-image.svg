@@ -4,6 +4,6 @@
 <g transform="translate(85 90)"><circle cx="50" cy="50" r="48" fill="url(#g)"/><circle cx="34" cy="38" r="4" fill="#fff"/><circle cx="66" cy="42" r="4" fill="#fff"/><path d="M33 64c5 6 11 9 18 9 7 0 13-3 18-9" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></g>
 <text x="205" y="135" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="50" font-weight="800">World Mood</text>
 <text x="88" y="310" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="78" font-weight="800">See how the world feels.</text>
-<text x="91" y="382" fill="#aab5d1" font-family="Arial,Helvetica,sans-serif" font-size="32" font-weight="500">A playful, privacy-first emotional weather map.</text>
+<text x="91" y="382" fill="#aab5d1" font-family="Arial,Helvetica,sans-serif" font-size="32" font-weight="500">Real anonymous check-ins. No simulated mood data.</text>
 <g opacity=".9"><circle cx="828" cy="430" r="16" fill="#79E7FF"/><circle cx="900" cy="474" r="22" fill="#8E88FF"/><circle cx="980" cy="412" r="14" fill="#FF81B7"/><circle cx="1055" cy="460" r="19" fill="#77D6B1"/></g>
 </svg>

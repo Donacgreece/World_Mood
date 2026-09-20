@@ -1,22 +1,27 @@
 import { useMemo, useState } from 'react'
 import { Check, LocateFixed, MapPinOff, ShieldCheck, X } from 'lucide-react'
-import { emotionMeta, reasonMeta, reasonName, t } from '../i18n'
-import type { EmotionKey, Language, MoodEntry, ReasonKey } from '../lib/types'
+import { copy, emotionMeta, reasonMeta } from '../i18n'
+import type { EmotionKey, MoodEntry, ReasonKey } from '../lib/types'
 
+const emotions: EmotionKey[] = ['great', 'good', 'calm', 'okay', 'tired', 'low', 'stressed', 'angry']
+const reasons: ReasonKey[] = ['work', 'family', 'money', 'health', 'love', 'weather', 'other']
 const scoreByEmotion: Record<EmotionKey, number> = {
-  great: 9.4, good: 8, calm: 7, okay: 5.8, tired: 4.8, low: 3.9, stressed: 3.2, angry: 2.8
+  great: 9,
+  good: 7.8,
+  calm: 6.8,
+  okay: 5.6,
+  tired: 4.7,
+  low: 3.7,
+  stressed: 3.1,
+  angry: 2.8
 }
 
-const emotions = Object.keys(emotionMeta) as EmotionKey[]
-const reasons = Object.keys(reasonMeta) as ReasonKey[]
-
-export function MoodComposer({ open, language, onClose, onSubmit }: {
+export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
   open: boolean
-  language: Language
+  liveSharing: boolean
   onClose: () => void
-  onSubmit: (entry: MoodEntry) => Promise<void> | void
+  onSubmit: (entry: MoodEntry) => Promise<boolean> | boolean
 }) {
-  const c = t(language)
   const [emotion, setEmotion] = useState<EmotionKey>('good')
   const [intensity, setIntensity] = useState(3)
   const [reason, setReason] = useState<ReasonKey | undefined>()
@@ -24,6 +29,7 @@ export function MoodComposer({ open, language, onClose, onSubmit }: {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [sent, setSent] = useState(false)
+  const [shared, setShared] = useState(false)
   const [sending, setSending] = useState(false)
 
   const score = useMemo(() => {
@@ -39,9 +45,10 @@ export function MoodComposer({ open, language, onClose, onSubmit }: {
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        const lat = Math.round(coords.latitude * 2) / 2
-        const lng = Math.round(coords.longitude * 2) / 2
-        setLocation({ lat, lng })
+        setLocation({
+          lat: Math.round(coords.latitude * 2) / 2,
+          lng: Math.round(coords.longitude * 2) / 2
+        })
         setLocating(false)
       },
       () => setLocating(false),
@@ -63,7 +70,8 @@ export function MoodComposer({ open, language, onClose, onSubmit }: {
       createdAt: new Date().toISOString(),
       source: 'local'
     }
-    await onSubmit(entry)
+    const published = await onSubmit(entry)
+    setShared(Boolean(published))
     setSending(false)
     setSent(true)
   }
@@ -72,6 +80,7 @@ export function MoodComposer({ open, language, onClose, onSubmit }: {
     onClose()
     window.setTimeout(() => {
       setSent(false)
+      setShared(false)
       setEmotion('good')
       setIntensity(3)
       setReason(undefined)
@@ -88,54 +97,68 @@ export function MoodComposer({ open, language, onClose, onSubmit }: {
           <>
             <div className="sheet-head">
               <span className="sheet-kicker">{emotionMeta[emotion].emoji} {score.toFixed(1)} / 10</span>
-              <h2 id="mood-composer-title">{c.howFeel}</h2>
-              <p>{c.chooseEmotion}</p>
+              <h2 id="mood-composer-title">{copy.howFeel}</h2>
+              <p>{copy.chooseEmotion}</p>
             </div>
+
             <div className="emotion-grid">
               {emotions.map((key) => (
                 <button key={key} className={`emotion-button ${emotion === key ? 'is-selected' : ''}`} onClick={() => setEmotion(key)}>
                   <span>{emotionMeta[key].emoji}</span>
-                  <strong>{emotionMeta[key][language]}</strong>
+                  <strong>{emotionMeta[key].name}</strong>
                 </button>
               ))}
             </div>
+
             <div className="composer-section">
-              <div className="field-label"><span>{c.intensity}</span><strong>{intensity}/5</strong></div>
+              <div className="field-label"><span>{copy.intensity}</span><strong>{intensity}/5</strong></div>
               <div className="intensity-row">
-                {[1,2,3,4,5].map((level) => <button key={level} aria-label={`${c.intensity} ${level}`} className={level <= intensity ? 'is-on' : ''} onClick={() => setIntensity(level)} />)}
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <button key={level} aria-label={`${copy.intensity} ${level}`} className={level <= intensity ? 'is-on' : ''} onClick={() => setIntensity(level)} />
+                ))}
               </div>
             </div>
+
             <div className="composer-section">
-              <div className="field-label"><span>{c.why}</span><em>{c.optional}</em></div>
+              <div className="field-label"><span>{copy.why}</span><em>{copy.optional}</em></div>
               <div className="reason-chips">
                 {reasons.map((key) => (
                   <button key={key} className={reason === key ? 'is-selected' : ''} onClick={() => setReason(reason === key ? undefined : key)}>
-                    {reasonMeta[key].emoji} {reasonName(key, language)}
+                    {reasonMeta[key].emoji} {reasonMeta[key].name}
                   </button>
                 ))}
               </div>
             </div>
+
             <label className="composer-section note-field">
-              <div className="field-label"><span>{c.note}</span><em>{c.optional}</em></div>
-              <textarea maxLength={160} value={note} onChange={(e) => setNote(e.target.value)} placeholder={c.notePlaceholder} />
+              <div className="field-label"><span>{copy.note}</span><em>{copy.optional}</em></div>
+              <textarea maxLength={160} value={note} onChange={(event) => setNote(event.target.value)} placeholder={copy.notePlaceholder} />
               <small>{note.length}/160</small>
             </label>
+
             <div className="location-box">
               <button onClick={location ? () => setLocation(null) : locate} disabled={locating}>
-                {location ? <MapPinOff size={18}/> : <LocateFixed size={18}/>} {location ? c.locationOn : c.location}
+                {location ? <MapPinOff size={18} /> : <LocateFixed size={18} />}
+                {locating ? 'Finding approximate location…' : location ? copy.locationOn : copy.location}
               </button>
-              <span>{c.locationHelp}</span>
+              <span>{copy.locationHelp}</span>
             </div>
-            <div className="privacy-inline"><ShieldCheck size={17}/><span><strong>{c.privateByDesign}.</strong> {c.privacyText}</span></div>
-            <button className="primary-button composer-submit" onClick={submit} disabled={sending}>{sending ? '…' : c.sendMood}</button>
+
+            <div className="privacy-inline">
+              <ShieldCheck size={17} />
+              <span><strong>{copy.privateByDesign}.</strong> {copy.privacyText}</span>
+            </div>
+
+            {!liveSharing && <div className="truth-notice">{copy.localOnlyNotice}</div>}
+            <button className="primary-button composer-submit" onClick={submit} disabled={sending}>{sending ? 'Saving…' : copy.sendMood}</button>
           </>
         ) : (
           <div className="success-state">
-            <div className="success-orb"><Check size={36}/></div>
+            <div className="success-orb"><Check size={36} /></div>
             <span className="success-emoji">{emotionMeta[emotion].emoji}</span>
-            <h2>{c.thanks}</h2>
-            <p>{c.thanksBody}</p>
-            <button className="primary-button" onClick={closeAndReset}>{c.close}</button>
+            <h2>{copy.thanks}</h2>
+            <p>{shared ? copy.thanksLiveBody : copy.thanksLocalBody}</p>
+            <button className="primary-button" onClick={closeAndReset}>{copy.close}</button>
           </div>
         )}
       </section>

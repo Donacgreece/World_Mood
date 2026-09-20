@@ -1,6 +1,6 @@
 import type { MoodSummary } from './types'
 
-export async function createShareCard(summary: MoodSummary, language: 'en' | 'el') {
+export async function createShareCard(summary: MoodSummary) {
   const canvas = document.createElement('canvas')
   canvas.width = 1080
   canvas.height = 1920
@@ -34,7 +34,7 @@ export async function createShareCard(summary: MoodSummary, language: 'en' | 'el
   ctx.fillText('WORLD MOOD', 86, 160)
   ctx.font = '500 40px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,.72)'
-  ctx.fillText(language === 'el' ? 'Πώς νιώθει ο κόσμος τώρα' : 'How the world feels right now', 86, 228)
+  ctx.fillText('Real anonymous check-ins, right now', 86, 228)
 
   ctx.fillStyle = '#ffffff'
   ctx.font = '800 300px system-ui, -apple-system, Segoe UI, sans-serif'
@@ -44,15 +44,15 @@ export async function createShareCard(summary: MoodSummary, language: 'en' | 'el
 
   ctx.fillStyle = 'rgba(255,255,255,.72)'
   ctx.font = '500 40px system-ui, -apple-system, Segoe UI, sans-serif'
-  ctx.fillText(`${summary.responses.toLocaleString()} ${language === 'el' ? 'συμμετοχές' : 'responses'}`, 90, 1175)
-  ctx.fillText(`${summary.countries} ${language === 'el' ? 'χώρες' : 'countries'}`, 90, 1235)
+  ctx.fillText(`${summary.responses.toLocaleString()} real responses`, 90, 1175)
+  ctx.fillText(`${summary.mappedAreas.toLocaleString()} mapped areas`, 90, 1235)
 
   ctx.fillStyle = 'rgba(255,255,255,.12)'
   ctx.roundRect(78, 1420, 924, 260, 52)
   ctx.fill()
   ctx.fillStyle = '#ffffff'
   ctx.font = '650 48px system-ui, -apple-system, Segoe UI, sans-serif'
-  ctx.fillText(language === 'el' ? 'Δες το παγκόσμιο συναίσθημα' : 'See the world’s emotional weather', 120, 1535)
+  ctx.fillText('See the world’s emotional weather', 120, 1535)
   ctx.fillStyle = 'rgba(255,255,255,.7)'
   ctx.font = '500 36px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillText('donacgreece.github.io/World_Mood', 120, 1610)
