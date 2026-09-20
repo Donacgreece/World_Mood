@@ -19,7 +19,7 @@ export const copy = {
   trending: 'top feeling',
   dataAge: 'latest pulse',
   resonances: 'resonances',
-  mapHint: 'Drag to move. Pinch, scroll or use the controls to zoom the map.',
+  mapHint: 'Desktop: drag or scroll to explore. Touch: scroll the page with one finger and zoom the map with two.',
   noLiveData: 'The world is quiet here.',
   noLiveDataBody: 'Real check-ins will appear the moment people start sharing their mood with approximate location enabled.',
   backendRequired: 'Connect the live network to publish and receive real shared check-ins.',

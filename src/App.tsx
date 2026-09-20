@@ -63,7 +63,7 @@ function aggregatePoints(entries: MoodEntry[]): MoodPoint[] {
     return {
       id,
       label: countryName(code) || 'Anonymous area',
-      detail: 'Approximate privacy-safe area',
+      detail: `~${lat.toFixed(1)}°, ${lng.toFixed(1)}° · approximate 0.5° privacy grid`,
       lat,
       lng,
       score: Number(score.toFixed(1)),
@@ -423,7 +423,11 @@ export default function App() {
                   {selectedPoint && (
                     <div className="selected-area-card">
                       <span>{emotionMeta[selectedPoint.emotion].emoji}</span>
-                      <div><strong>{selectedPoint.label}</strong><small>{selectedPoint.score.toFixed(1)}/10 · {selectedPoint.activity} check-in{selectedPoint.activity === 1 ? '' : 's'}</small></div>
+                      <div>
+                        <strong>{selectedPoint.label}</strong>
+                        <b>{emotionMeta[selectedPoint.emotion].name} · {selectedPoint.score.toFixed(1)}/10</b>
+                        <small>{selectedPoint.detail} · {selectedPoint.activity} check-in{selectedPoint.activity === 1 ? '' : 's'}</small>
+                      </div>
                       <button onClick={() => setSelectedPoint(null)} aria-label="Close selected area">×</button>
                     </div>
                   )}
@@ -436,7 +440,21 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-                <div className="map-helper"><span>{copy.mapHint}</span><strong>{copy.realDataOnly}</strong></div>
+                <div className="map-legend" aria-label="Mood marker color legend">
+                  <span className="legend-title">Mood color</span>
+                  <span><i className="legend-swatch is-great" />Great 8+</span>
+                  <span><i className="legend-swatch is-good" />Good 7+</span>
+                  <span><i className="legend-swatch is-calm" />Calm 6+</span>
+                  <span><i className="legend-swatch is-okay" />Okay 5+</span>
+                  <span><i className="legend-swatch is-tired" />Tired 4+</span>
+                  <span><i className="legend-swatch is-low" />Low 3+</span>
+                  <span><i className="legend-swatch is-stressed" />Stressed &lt;3</span>
+                </div>
+                <div className="map-helper">
+                  <span className="desktop-map-hint">Scroll to zoom · drag to move · select a marker for its exact mood reading</span>
+                  <span className="mobile-map-hint">Scroll normally · pinch with two fingers to zoom · tap a marker for mood details</span>
+                  <strong>{copy.realDataOnly}</strong>
+                </div>
               </div>
             </div>
 

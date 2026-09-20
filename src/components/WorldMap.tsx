@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { geoNaturalEarth1, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import countries110 from 'world-atlas/countries-110m.json'
 import { Minus, Plus, RotateCcw } from 'lucide-react'
+import { emotionMeta } from '../i18n'
 import type { MoodPoint } from '../lib/types'
 
 const WIDTH = 960
@@ -16,7 +17,7 @@ type MapTransform = { x: number; y: number; k: number }
 type Pointer = { x: number; y: number }
 type Gesture =
   | { mode: 'drag'; pointerId: number; start: Pointer; base: MapTransform }
-  | { mode: 'pinch'; distance: number; center: Pointer; base: MapTransform; anchor: Pointer }
+  | { mode: 'pinch'; distance: number; base: MapTransform; anchor: Pointer }
 
 function scoreTone(score: number) {
   if (score >= 8) return 'var(--mood-great)'
@@ -66,23 +67,6 @@ export function WorldMap({ points, selectedId, onSelect }: {
     return (feature(topo, topo.objects.countries) as any).features as any[]
   }, [])
 
-  useEffect(() => {
-    if (!selectedId) return
-    const point = points.find((item) => item.id === selectedId)
-    if (!point) return
-    const coords = projection([point.lng, point.lat])
-    if (!coords) return
-
-    setTransform((current) => {
-      const k = Math.max(current.k, 2.15)
-      return clampTransform({
-        k,
-        x: WIDTH / 2 - coords[0] * k,
-        y: HEIGHT / 2 - coords[1] * k
-      })
-    })
-  }, [points, selectedId])
-
   const clientToSvg = (point: Pointer) => {
     const rect = svgRef.current?.getBoundingClientRect()
     if (!rect) return { x: WIDTH / 2, y: HEIGHT / 2 }
@@ -91,6 +75,57 @@ export function WorldMap({ points, selectedId, onSelect }: {
       y: ((point.y - rect.top) / rect.height) * HEIGHT
     }
   }
+
+  useEffect(() => {
+    if (!selectedId) return
+    const point = points.find((item) => item.id === selectedId)
+    if (!point) return
+    const coords = projection([point.lng, point.lat])
+    if (!coords) return
+
+    setTransform((current) => {
+      const k = Math.max(current.k, 2.05)
+      return clampTransform({
+        k,
+        x: WIDTH / 2 - coords[0] * k,
+        y: HEIGHT / 2 - coords[1] * k
+      })
+    })
+  }, [points, selectedId])
+
+  // React's synthetic wheel handling can still allow the page to scroll on
+  // some trackpads/browsers. A native non-passive listener guarantees that
+  // wheel input over the map belongs only to map zoom on desktop.
+  useEffect(() => {
+    const node = svgRef.current
+    if (!node) return
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      const rect = node.getBoundingClientRect()
+      const cx = ((event.clientX - rect.left) / rect.width) * WIDTH
+      const cy = ((event.clientY - rect.top) / rect.height) * HEIGHT
+      const normalized = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * 160 : event.deltaY
+      const delta = Math.max(-110, Math.min(110, normalized))
+      const factor = Math.exp(-delta * 0.00235)
+
+      setTransform((current) => {
+        const k = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, current.k * factor))
+        if (Math.abs(k - current.k) < 0.0001) return current
+        const ratio = k / current.k
+        return clampTransform({
+          k,
+          x: cx - (cx - current.x) * ratio,
+          y: cy - (cy - current.y) * ratio
+        })
+      })
+    }
+
+    node.addEventListener('wheel', handleWheel, { passive: false })
+    return () => node.removeEventListener('wheel', handleWheel)
+  }, [])
 
   const zoomAt = (factor: number, cx = WIDTH / 2, cy = HEIGHT / 2) => {
     setTransform((current) => {
@@ -105,24 +140,16 @@ export function WorldMap({ points, selectedId, onSelect }: {
     })
   }
 
-  const onWheel = (event: ReactWheelEvent<SVGSVGElement>) => {
-    event.preventDefault()
-    const center = clientToSvg({ x: event.clientX, y: event.clientY })
-    zoomAt(event.deltaY < 0 ? 1.16 : 1 / 1.16, center.x, center.y)
-  }
-
   const beginPinch = () => {
     const values = [...pointersRef.current.values()]
     if (values.length < 2) return
     const a = values[0]
     const b = values[1]
-    const centerClient = midpoint(a, b)
-    const center = clientToSvg(centerClient)
+    const center = clientToSvg(midpoint(a, b))
     const base = transformRef.current
     gestureRef.current = {
       mode: 'pinch',
       distance: Math.max(1, distance(a, b)),
-      center,
       base,
       anchor: {
         x: (center.x - base.x) / base.k,
@@ -133,15 +160,28 @@ export function WorldMap({ points, selectedId, onSelect }: {
 
   const onPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
-    setDragging(true)
 
-    if (pointersRef.current.size >= 2) {
-      beginPinch()
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    // Touch UX is cooperative. One finger belongs to normal page scrolling.
+    // The map only captures a gesture after a second finger joins.
+    if (event.pointerType !== 'mouse') {
+      if (pointersRef.current.size >= 2) {
+        for (const pointerId of pointersRef.current.keys()) {
+          try { event.currentTarget.setPointerCapture(pointerId) } catch { /* browser may already own it */ }
+        }
+        event.preventDefault()
+        setDragging(true)
+        beginPinch()
+      } else {
+        gestureRef.current = null
+        setDragging(false)
+      }
       return
     }
 
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setDragging(true)
     gestureRef.current = {
       mode: 'drag',
       pointerId: event.pointerId,
@@ -155,6 +195,7 @@ export function WorldMap({ points, selectedId, onSelect }: {
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
 
     if (pointersRef.current.size >= 2) {
+      event.preventDefault()
       if (gestureRef.current?.mode !== 'pinch') beginPinch()
       const gesture = gestureRef.current
       if (!gesture || gesture.mode !== 'pinch') return
@@ -172,6 +213,8 @@ export function WorldMap({ points, selectedId, onSelect }: {
       return
     }
 
+    if (event.pointerType !== 'mouse') return
+
     const gesture = gestureRef.current
     if (!gesture || gesture.mode !== 'drag' || gesture.pointerId !== event.pointerId || !svgRef.current) return
     const rect = svgRef.current.getBoundingClientRect()
@@ -186,14 +229,20 @@ export function WorldMap({ points, selectedId, onSelect }: {
 
   const stopPointer = (event: ReactPointerEvent<SVGSVGElement>) => {
     pointersRef.current.delete(event.pointerId)
-    if (pointersRef.current.size === 1) {
-      const [pointerId, point] = [...pointersRef.current.entries()][0]
-      gestureRef.current = { mode: 'drag', pointerId, start: point, base: transformRef.current }
-    } else if (pointersRef.current.size === 0) {
+
+    if (event.pointerType !== 'mouse') {
+      if (pointersRef.current.size >= 2) {
+        beginPinch()
+      } else {
+        gestureRef.current = null
+        setDragging(false)
+      }
+      return
+    }
+
+    if (pointersRef.current.size === 0) {
       gestureRef.current = null
       setDragging(false)
-    } else {
-      beginPinch()
     }
   }
 
@@ -208,50 +257,62 @@ export function WorldMap({ points, selectedId, onSelect }: {
         className="world-map"
         role="img"
         aria-label="Interactive world map showing real anonymous mood check-ins"
-        onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={stopPointer}
         onPointerCancel={stopPointer}
         onPointerLeave={(event: ReactPointerEvent<SVGSVGElement>) => { if (event.pointerType === 'mouse' && event.buttons === 0) stopPointer(event) }}
         onDoubleClick={(event: ReactMouseEvent<SVGSVGElement>) => {
+          event.preventDefault()
           const center = clientToSvg({ x: event.clientX, y: event.clientY })
-          zoomAt(1.45, center.x, center.y)
+          zoomAt(1.42, center.x, center.y)
         }}
       >
         <g transform={`translate(${transform.x} ${transform.y}) scale(${transform.k})`}>
           <g className="countries">
             {countries.map((country, index) => <path key={index} d={path(country) || ''} />)}
           </g>
+        </g>
 
-          <g className="mood-points">
-            {points.map((point, index) => {
-              const coords = projection([point.lng, point.lat])
-              if (!coords) return null
-              const active = selectedId === point.id || hoveredId === point.id
-              const radius = 5.5 + Math.min(7, Math.log2(point.activity + 1) * 1.7)
-              const tone = scoreTone(point.score)
-              return (
-                <g
-                  key={point.id}
-                  transform={`translate(${coords[0]},${coords[1]})`}
-                  className={`mood-point ${active ? 'is-active' : ''}`}
-                  style={{ '--point-color': tone, '--delay': `${(index % 12) * -0.27}s` } as CSSProperties}
-                  onMouseEnter={() => setHoveredId(point.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  onClick={(event: ReactMouseEvent<SVGGElement>) => { event.stopPropagation(); onSelect(point) }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event: ReactKeyboardEvent<SVGGElement>) => { if (event.key === 'Enter' || event.key === ' ') onSelect(point) }}
-                  aria-label={`${point.label}, mood ${point.score.toFixed(1)}, ${point.activity} real check-ins`}
-                >
-                  <circle className="point-aura" r={radius * 3.3} />
-                  <circle className="point-pulse" r={radius * 1.55} />
-                  <circle className="point-core" r={radius} />
-                </g>
-              )
-            })}
-          </g>
+        <g className="mood-points">
+          {points.map((point, index) => {
+            const coords = projection([point.lng, point.lat])
+            if (!coords) return null
+            const x = transform.x + coords[0] * transform.k
+            const y = transform.y + coords[1] * transform.k
+            const active = selectedId === point.id || hoveredId === point.id
+            // Markers intentionally stay almost constant in screen size while
+            // the geography zooms. This preserves geographic precision.
+            const radius = 4.6 + Math.min(2.2, Math.log2(point.activity + 1) * 0.72)
+            const tone = scoreTone(point.score)
+            const emotion = emotionMeta[point.emotion]
+            return (
+              <g
+                key={point.id}
+                transform={`translate(${x},${y})`}
+                className={`mood-point ${active ? 'is-active' : ''}`}
+                style={{ '--point-color': tone, '--delay': `${(index % 12) * -0.27}s` } as CSSProperties}
+                onMouseEnter={() => setHoveredId(point.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                onClick={(event: ReactMouseEvent<SVGGElement>) => { event.stopPropagation(); onSelect(point) }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event: ReactKeyboardEvent<SVGGElement>) => { if (event.key === 'Enter' || event.key === ' ') onSelect(point) }}
+                aria-label={`${point.label}, ${emotion.name}, mood ${point.score.toFixed(1)}, ${point.activity} real check-ins`}
+              >
+                <circle className="point-hit" r={14} />
+                <circle className="point-aura" r={radius * 2.25} />
+                <circle className="point-pulse" r={radius * 1.55} />
+                <circle className="point-core" r={radius} />
+                {active && (
+                  <g className="point-readout" transform={`translate(${radius + 7},${-radius - 8})`}>
+                    <rect x="0" y="-15" rx="8" width="58" height="24" />
+                    <text x="7" y="1">{emotion.emoji} {point.score.toFixed(1)}</text>
+                  </g>
+                )}
+              </g>
+            )
+          })}
         </g>
       </svg>
 
@@ -262,6 +323,7 @@ export function WorldMap({ points, selectedId, onSelect }: {
       </div>
 
       <div className="zoom-indicator">{Math.round(transform.k * 100)}%</div>
+      <div className="map-touch-hint" aria-hidden="true">Scroll normally · pinch with two fingers to zoom</div>
       <div className="map-noise" aria-hidden="true" />
     </div>
   )

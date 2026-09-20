@@ -43,3 +43,7 @@ The public base tables use RLS and deny direct anonymous table access. Public in
 From PowerShell, run `push-world-mood.ps1`. The script syncs this complete project into `Donacgreece/World_Mood`, pushes `main`, and watches the GitHub Pages workflow.
 
 Live site: `https://donacgreece.github.io/World_Mood/`
+
+## Map interaction hotfix
+
+This build keeps mood markers visually stable while zooming, uses a native non-passive wheel listener so desktop map zoom never scrolls the page at the same time, and uses cooperative mobile gestures so one finger scrolls the page while two fingers control map zoom. Marker colors now include an explicit legend and selected regions show the dominant emotion, score, approximate privacy grid, and real check-in count.

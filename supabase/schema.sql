@@ -86,9 +86,10 @@ begin
   if p_country_code is not null and p_country_code !~ '^[A-Za-z]{2}$' then raise exception 'INVALID_COUNTRY'; end if;
 
   if exists (
-    select 1 from public.mood_entries
-    where actor_hash = p_actor_hash
-      and created_at > now() - interval '45 seconds'
+    select 1
+    from public.mood_entries m
+    where m.actor_hash = p_actor_hash
+      and m.created_at > now() - interval '45 seconds'
   ) then
     raise exception 'RATE_LIMIT';
   end if;
