@@ -55,3 +55,7 @@ This build keeps mood markers visually stable while zooming, uses a native non-p
 - Mood composer has improved mobile scrolling, spacing and symmetric reason controls.
 - Great + intensity 5 reaches 10.0/10.
 - Private note remains on-device and is labeled ‘A private note for future you’.
+
+### Deep zoom interaction update
+
+The map interaction layer now supports up to 30x zoom, cursor-anchored wheel and trackpad zoom on desktop, higher-detail 50m world geometry, two-finger pinch zoom and pan on touch devices, mobile double-tap zoom, and normal one-finger page scrolling over the map.
