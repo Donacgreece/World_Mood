@@ -1,14 +1,15 @@
-import { Download, Moon, ShieldCheck, Sun, Trash2 } from 'lucide-react'
+import { DatabaseZap, Download, ShieldCheck, Trash2 } from 'lucide-react'
 import { copy } from '../i18n'
 import type { ThemeMode } from '../lib/types'
 
-export function Settings({ theme, setTheme, canInstall, installed, onInstall, onClear }: {
+export function Settings({ theme, setTheme, canInstall, installed, onInstall, onClear, liveConnected }: {
   theme: ThemeMode
   setTheme: (v: ThemeMode) => void
   canInstall: boolean
   installed: boolean
   onInstall: () => void
   onClear: () => void
+  liveConnected: boolean
 }) {
   return (
     <section className="page-section">
@@ -21,7 +22,7 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
       <div className="settings-stack">
         <div className="settings-card">
           <div className="settings-label">
-            <Sun />
+            <span className="settings-symbol">◐</span>
             <div><strong>{copy.appearance}</strong><span>Light, dark or follow your device</span></div>
           </div>
           <div className="segmented three-small">
@@ -41,6 +42,14 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
           <button className="secondary-button" disabled={!canInstall || installed} onClick={onInstall}>{copy.installCta}</button>
         </div>
 
+        <div className="settings-card">
+          <div className="settings-label">
+            <DatabaseZap />
+            <div><strong>Live network</strong><span>{liveConnected ? 'Supabase is connected. Shared pulses use real community data only.' : 'Not connected yet. Public activity remains empty instead of showing simulated data.'}</span></div>
+          </div>
+          <div className={`connection-status ${liveConnected ? 'is-live' : ''}`}><span />{liveConnected ? 'CONNECTED' : 'NOT CONNECTED'}</div>
+        </div>
+
         <div className="settings-card vertical">
           <div className="settings-label">
             <ShieldCheck />
@@ -50,8 +59,8 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
         </div>
 
         <div className="about-card">
-          <Moon />
-          <div><strong>{copy.about}</strong><p>{copy.aboutText}</p><small>World Mood v0.0.1</small></div>
+          <img src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" />
+          <div><strong>{copy.about}</strong><p>{copy.aboutText}</p><small>World Mood v0.0.2</small></div>
         </div>
       </div>
     </section>

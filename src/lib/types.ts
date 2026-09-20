@@ -16,6 +16,7 @@ export interface MoodEntry {
   lng?: number
   countryCode?: string
   createdAt: string
+  resonanceCount?: number
   source?: 'local' | 'supabase'
 }
 
@@ -28,6 +29,7 @@ export interface MoodPoint {
   score: number
   emotion: EmotionKey
   activity: number
+  countryCode?: string
 }
 
 export interface MoodSummary {
@@ -38,4 +40,10 @@ export interface MoodSummary {
   delta: number | null
   trendingEmotion: EmotionKey
   latestAt?: string
+  resonances: number
+}
+
+export interface SubmitResult {
+  shared: boolean
+  reason?: 'backend-offline' | 'network-error' | 'rate-limit'
 }

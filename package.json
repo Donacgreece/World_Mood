@@ -1,13 +1,14 @@
 {
   "name": "world-mood",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
+  "description": "A privacy-first live social pulse and emotional weather map built from real anonymous check-ins.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.app.json --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty"
   },
   "dependencies": {
     "d3-geo": "latest",

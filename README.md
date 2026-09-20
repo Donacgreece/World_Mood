@@ -1,99 +1,90 @@
-# World Mood
+# World Mood v0.0.2
 
-**Version 0.0.1**
+**Feel the planet. Together.**
 
-World Mood is a privacy-first Progressive Web App that turns real anonymous mood check-ins into a live emotional weather map of the world.
+World Mood is a privacy-first PWA that turns real anonymous mood check-ins into a living social pulse and emotional weather map. Version 0.0.2 removes all simulated activity and strengthens the project as a social product rather than a static mood visualization.
 
-The public map contains **no demo, seeded, generated or simulated mood data**. If there are no real submissions, the map stays empty and says so clearly.
-
-## Product principles
+## What changed in v0.0.2
 
 - English-only interface
-- Real community submissions only
-- No account required
-- No public user profiles
-- No precise location storage
-- Notes stay private on the device and are never uploaded
-- Responsive from small phones to ultrawide desktop displays
-- Full light, dark and system appearance modes
-- Installable PWA with offline private journal support
-- Interactive world map with pan, wheel/trackpad zoom, zoom controls and reset
-
-## Features
-
-- Live global mood summary from real backend submissions
-- Time ranges: Now, 24H, 7D and 30D
-- Honest empty states when live data is missing
-- Approximate map areas aggregated from coarse half-degree location buckets
-- Real response count, mapped-area count, most common mood and period-over-period score change
-- Anonymous mood composer with eight emotions, five intensity levels and optional context
-- Private local journal
-- Shareable World Mood card generated from live data only
-- Responsive navigation for mobile, tablet and desktop
-- PWA manifest, service worker, install flow, favicon, app icons and Apple touch icon
+- No demo, seeded or fake public mood data
+- Real shared data architecture through Supabase RPC functions
+- Live polling every 12 seconds while the app is visible
+- Anonymous social Pulse feed
+- Community Resonance reactions without public profiles
+- Rate-limited anonymous submissions using a one-way device hash
+- Approximate geolocation with on-device country detection
+- Exact GPS is discarded before a public submission is sent
+- Private journal notes never leave the device
+- Interactive world map with mouse wheel, trackpad, buttons, drag and mobile pinch zoom
+- Page-level zoom locked on mobile while map gestures remain enabled
+- Fully rebuilt responsive layout for small phones, large phones, tablets, desktop and ultrawide displays
+- Refined light mode and dark mode using the existing blue, violet and pink palette
+- New unified World Mood brand mark used by the site, favicon, Apple touch icon and PWA icons
+- iOS startup splash assets plus a short branded standalone launch screen
+- PWA manifest, offline caching and install flow
+- Shareable World Mood social card generator
 - GitHub Pages deployment workflow
-- Supabase schema with Row Level Security
 
-## Local development
+## Public data model
+
+The application does not expose the underlying tables directly to anonymous users. Supabase exposes only three security-definer RPC functions:
+
+- `submit_mood`
+- `get_live_moods`
+- `react_to_mood`
+
+The public feed never returns actor hashes. The actor hash exists only for basic anti-spam and one-reaction-per-device behavior. It is derived locally from a random installation identifier and is not an account, email, advertising ID or precise device fingerprint.
+
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Production build:
+Production check:
 
 ```bash
 npm run build
 ```
 
-## Real live data with Supabase
+## Deploy to Donacgreece/World_Mood
 
-The frontend deliberately does not fall back to fake information when no backend is connected.
+From PowerShell, with `World_Mood-v0.0.2.zip` in Downloads:
 
-1. Create a Supabase project.
-2. Open the Supabase SQL Editor.
-3. Run `supabase/schema.sql` once.
-4. In the GitHub repository settings, add:
-   - Actions variable: `VITE_SUPABASE_URL`
-   - Actions secret: `VITE_SUPABASE_ANON_KEY`
-5. Push to `main` or rerun the Pages workflow.
+```powershell
+$zip="$HOME\Downloads\World_Mood-v0.0.2.zip"; $dst="$HOME\Downloads"; Expand-Archive -Path $zip -DestinationPath $dst -Force; Set-ExecutionPolicy -Scope Process Bypass -Force; & "$dst\World_Mood-v0.0.2\push-world-mood.ps1"
+```
 
-The browser sends only the public Supabase anon key. Never put a service-role key in the frontend or GitHub Pages environment.
-
-## Public data model
-
-Shared submissions contain:
-
-- mood score
-- emotion
-- intensity
-- optional reason category
-- optional coarse location rounded to a half-degree bucket
-- server timestamp
-
-Free-form journal notes remain only in browser storage and are never uploaded to the public database.
-
-## Deployment
-
-GitHub Actions builds the Vite app and deploys `dist` to GitHub Pages.
-
-Expected project URL:
+The site target is:
 
 `https://donacgreece.github.io/World_Mood/`
 
-## Stack
+## Connect the real live network
 
-- React
-- TypeScript
-- Vite
-- Vite PWA
-- D3 Geo
-- TopoJSON
-- World Atlas
-- Supabase REST
-- GitHub Pages
+A static GitHub Pages site cannot create a shared database by itself. Create one Supabase project once, then:
 
-## Privacy note
+1. Open the Supabase SQL Editor.
+2. Run `supabase/schema.sql` in full.
+3. Copy the Project URL and public anonymous key from Supabase Project Settings > API.
+4. Run:
 
-World Mood is not a diagnostic or medical product. It visualizes voluntary, anonymous self-reported check-ins and should not be interpreted as a scientific measurement of an entire population.
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
+& "$HOME\Downloads\World_Mood-v0.0.2\setup-live-backend.ps1"
+```
+
+The script copies the schema to your clipboard, asks for the Project URL and anonymous key, stores them in GitHub Actions as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, then triggers a fresh Pages deployment.
+
+Until this one-time backend setup is completed, World Mood deliberately shows an empty live network. It never fills the map with invented activity.
+
+## Privacy behavior
+
+- No account is required.
+- No public profile is created.
+- Journal notes stay in localStorage only.
+- Exact location is used only in memory long enough to identify the country and round coordinates to a 0.5 degree bucket.
+- Only the rounded location is eligible for public submission.
+- Public social reactions are anonymous.
+- The app is non-diagnostic and is not intended to infer health conditions.

@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Activity, ArrowUpRight, Download, Globe2, HeartPulse, Moon, Share2, Sparkles, Sun, WifiOff } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { Activity, ArrowUpRight, Download, Globe2, HeartHandshake, HeartPulse, Moon, Radio, Share2, Sparkles, Sun, WifiOff } from 'lucide-react'
 import { BottomNav } from './components/BottomNav'
 import { Explore } from './components/Explore'
 import { Journal } from './components/Journal'
+import { LaunchScreen } from './components/LaunchScreen'
 import { Logo } from './components/Logo'
 import { MoodComposer } from './components/MoodComposer'
+import { PulseFeed } from './components/PulseFeed'
 import { Settings } from './components/Settings'
 import { WorldMap } from './components/WorldMap'
+import { countryName } from './lib/geo'
 import { copy, emotionMeta, scoreLabel } from './i18n'
 import { createShareCard } from './lib/share'
-import { fetchLiveMoods, hasLiveBackend, submitLiveMood } from './lib/supabase'
-import { hasOnboarded, readJournal, readTheme, saveJournal, saveTheme, setOnboarded } from './lib/storage'
-import type { EmotionKey, MoodEntry, MoodPoint, MoodSummary, ThemeMode, TimeRange, ViewKey } from './lib/types'
+import { fetchLiveMoods, hasLiveBackend, LiveRateLimitError, reactToMood, submitLiveMood } from './lib/supabase'
+import { getActorHash, hasOnboarded, markReacted, readJournal, readReactedIds, readTheme, saveJournal, saveTheme, setOnboarded } from './lib/storage'
+import type { EmotionKey, MoodEntry, MoodPoint, MoodSummary, SubmitResult, ThemeMode, TimeRange, ViewKey } from './lib/types'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -35,12 +38,6 @@ function dominantEmotion(entries: MoodEntry[]): EmotionKey {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'okay'
 }
 
-function coordinateLabel(lat: number, lng: number) {
-  const latText = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}`
-  const lngText = `${Math.abs(lng).toFixed(1)}°${lng >= 0 ? 'E' : 'W'}`
-  return `${latText}, ${lngText}`
-}
-
 function aggregatePoints(entries: MoodEntry[]): MoodPoint[] {
   const buckets = new Map<string, MoodEntry[]>()
 
@@ -55,16 +52,18 @@ function aggregatePoints(entries: MoodEntry[]): MoodPoint[] {
   return [...buckets.entries()].map(([id, bucket]) => {
     const lat = bucket[0].lat as number
     const lng = bucket[0].lng as number
+    const code = bucket.find((entry) => entry.countryCode)?.countryCode
     const score = bucket.reduce((sum, entry) => sum + entry.score, 0) / bucket.length
     return {
       id,
-      label: coordinateLabel(lat, lng),
-      detail: 'Approximate anonymous area',
+      label: countryName(code) || 'Anonymous area',
+      detail: 'Approximate privacy-safe area',
       lat,
       lng,
       score: Number(score.toFixed(1)),
       emotion: dominantEmotion(bucket),
-      activity: bucket.length
+      activity: bucket.length,
+      countryCode: code
     }
   })
 }
@@ -93,7 +92,7 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasOnboarded())
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(window.matchMedia('(display-mode: standalone)').matches)
-  const effectiveDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const [reactedIds, setReactedIds] = useState<Set<string>>(() => readReactedIds())
 
   useEffect(() => {
     const apply = () => {
@@ -109,7 +108,16 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.lang = 'en'
-    document.title = 'World Mood · See how the world feels'
+    document.title = 'World Mood · Feel the planet together'
+  }, [])
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('compose') === '1') {
+      setComposerOpen(true)
+      url.searchParams.delete('compose')
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+    }
   }, [])
 
   useEffect(() => {
@@ -135,39 +143,40 @@ export default function App() {
     }
   }, [])
 
-  useEffect(() => {
+  const refreshNetwork = useCallback(async (quiet = false) => {
     if (!hasLiveBackend) {
       setFeedEntries([])
       setLoadingLive(false)
       return
     }
 
+    try {
+      if (!quiet) setLoadingLive(true)
+      const entries = await fetchLiveMoods(sinceForFeed(range))
+      setFeedEntries(entries)
+      setBackendError(false)
+    } catch {
+      setBackendError(true)
+    } finally {
+      if (!quiet) setLoadingLive(false)
+    }
+  }, [range])
+
+  useEffect(() => {
     let cancelled = false
     const load = async () => {
-      try {
-        setLoadingLive(true)
-        const entries = await fetchLiveMoods(sinceForFeed(range))
-        if (!cancelled) {
-          setFeedEntries(entries)
-          setBackendError(false)
-        }
-      } catch {
-        if (!cancelled) {
-          setBackendError(true)
-          setFeedEntries([])
-        }
-      } finally {
-        if (!cancelled) setLoadingLive(false)
-      }
+      if (cancelled) return
+      await refreshNetwork(false)
     }
-
     load()
-    const timer = window.setInterval(load, 60000)
+    const timer = window.setInterval(() => {
+      if (!cancelled && document.visibilityState === 'visible' && navigator.onLine) refreshNetwork(true)
+    }, 12000)
     return () => {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [range])
+  }, [refreshNetwork])
 
   const { currentEntries, previousEntries } = useMemo(() => {
     const boundary = Date.now() - RANGE_MS[range]
@@ -193,9 +202,19 @@ export default function App() {
       mappedAreas: points.length,
       delta: previousScore == null ? null : Number((score - previousScore).toFixed(1)),
       trendingEmotion: dominantEmotion(currentEntries),
-      latestAt: currentEntries.reduce((latest, entry) => !latest || entry.createdAt > latest ? entry.createdAt : latest, '')
+      latestAt: currentEntries.reduce((latest, entry) => !latest || entry.createdAt > latest ? entry.createdAt : latest, ''),
+      resonances: currentEntries.reduce((sum, entry) => sum + (entry.resonanceCount || 0), 0)
     }
   }, [currentEntries, previousEntries, points.length])
+
+  const emotionDistribution = useMemo(() => {
+    const counts = new Map<EmotionKey, number>()
+    currentEntries.forEach((entry) => counts.set(entry.emotion, (counts.get(entry.emotion) || 0) + 1))
+    return [...counts.entries()]
+      .map(([emotion, count]) => ({ emotion, count, percent: currentEntries.length ? Math.round((count / currentEntries.length) * 100) : 0 }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  }, [currentEntries])
 
   const setTheme = (value: ThemeMode) => {
     setThemeState(value)
@@ -207,21 +226,36 @@ export default function App() {
     setTheme(currentlyDark ? 'light' : 'dark')
   }
 
-  const submitMood = async (entry: MoodEntry) => {
+  const submitMood = async (entry: MoodEntry): Promise<SubmitResult> => {
     const next = [entry, ...journal]
     setJournal(next)
     saveJournal(next)
 
-    if (!hasLiveBackend) return false
+    if (!hasLiveBackend) return { shared: false, reason: 'backend-offline' }
 
     try {
-      await submitLiveMood(entry)
+      const actorHash = await getActorHash()
+      await submitLiveMood(entry, actorHash)
       setBackendError(false)
-      setFeedEntries((current) => [{ ...entry, source: 'supabase' }, ...current])
-      return true
+      await refreshNetwork(true)
+      return { shared: true }
+    } catch (error) {
+      if (error instanceof LiveRateLimitError) return { shared: false, reason: 'rate-limit' }
+      setBackendError(true)
+      return { shared: false, reason: 'network-error' }
+    }
+  }
+
+  const react = async (entry: MoodEntry) => {
+    if (!hasLiveBackend || reactedIds.has(entry.id)) return
+    try {
+      const actorHash = await getActorHash()
+      const count = await reactToMood(entry.id, actorHash)
+      markReacted(entry.id)
+      setReactedIds((current) => new Set([...current, entry.id]))
+      setFeedEntries((current) => current.map((item) => item.id === entry.id ? { ...item, resonanceCount: Number(count) } : item))
     } catch {
       setBackendError(true)
-      return false
     }
   }
 
@@ -235,7 +269,7 @@ export default function App() {
   const share = async () => {
     if (!summary) return
     const blob = await createShareCard(summary)
-    const text = `The world is feeling ${summary.score}/10 right now on World Mood, based on ${summary.responses.toLocaleString()} real anonymous check-ins.`
+    const text = `World Mood is ${summary.score}/10 right now, based on ${summary.responses.toLocaleString()} real anonymous check-ins.`
     try {
       const file = blob ? new File([blob], 'world-mood.png', { type: 'image/png' }) : null
       if (file && navigator.canShare?.({ files: [file] })) {
@@ -246,7 +280,7 @@ export default function App() {
         await navigator.clipboard.writeText(`${text} ${window.location.href}`)
       }
     } catch {
-      // Sharing can be cancelled by the user.
+      // The user may cancel the share sheet.
     }
   }
 
@@ -266,39 +300,30 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <LaunchScreen />
       {!online && <div className="offline-banner"><WifiOff size={16} />{copy.offline}</div>}
 
       <aside className="desktop-rail">
         <Logo compact />
         <div className="rail-nav">
-          {[
-            { k: 'home', i: Globe2 },
-            { k: 'explore', i: Activity },
-            { k: 'journal', i: HeartPulse },
-            { k: 'settings', i: Sparkles }
-          ].map(({ k, i: Icon }) => (
-            <button key={k} className={view === k ? 'is-active' : ''} onClick={() => setView(k as ViewKey)} aria-label={copy.nav[k as keyof typeof copy.nav]}>
-              <Icon size={21} />
-            </button>
-          ))}
+          <button className={view === 'home' ? 'is-active' : ''} onClick={() => setView('home')} aria-label="Now"><Globe2 /></button>
+          <button className={view === 'explore' ? 'is-active' : ''} onClick={() => setView('explore')} aria-label="Explore"><Activity /></button>
+          <button className={view === 'journal' ? 'is-active' : ''} onClick={() => setView('journal')} aria-label="Journal"><HeartPulse /></button>
+          <button className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')} aria-label="You"><Sparkles /></button>
         </div>
-        <button className="rail-theme" onClick={quickToggleTheme} aria-label="Toggle theme">
-          {effectiveDark ? <Sun size={19} /> : <Moon size={19} />}
-        </button>
+        <button className="rail-theme" onClick={quickToggleTheme} aria-label="Toggle theme">{document.documentElement.dataset.theme === 'dark' ? <Sun /> : <Moon />}</button>
       </aside>
 
       <main className="main-area">
         <header className="topbar">
           <Logo />
           <div className="top-actions">
-            <div className={`network-pill network-${liveState}`} title={liveLabel}>
-              <span className={`live-dot ${liveState !== 'live' ? 'is-muted' : ''}`} />
+            <div className={`network-pill is-${liveState}`} title={copy.realDataHint}>
+              <span className="live-dot" />
               <span>{liveLabel}</span>
             </div>
-            <button className="icon-button" onClick={quickToggleTheme} aria-label="Toggle light and dark mode">
-              {effectiveDark ? <Sun size={19} /> : <Moon size={19} />}
-            </button>
-            {deferredPrompt && !installed && <button className="icon-button install-top" onClick={install} aria-label="Install"><Download size={19} /></button>}
+            {!installed && deferredPrompt && <button className="icon-button hide-mobile" onClick={install} aria-label="Install app"><Download size={18} /></button>}
+            <button className="icon-button" onClick={quickToggleTheme} aria-label="Toggle light and dark mode">{document.documentElement.dataset.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>
           </div>
         </header>
 
@@ -319,26 +344,18 @@ export default function App() {
 
               {summary ? (
                 <div className="global-score-card">
-                  <span>{emotionMeta[summary.trendingEmotion].emoji} {summary.label}</span>
-                  <strong>{summary.score.toFixed(1)}</strong>
-                  <small>/10</small>
+                  <span>WORLD MOOD</span>
+                  <strong>{summary.score.toFixed(1)}</strong><small>/10</small>
+                  <em>{summary.label}</em>
                 </div>
               ) : (
-                <div className="global-score-card is-empty">
-                  <span>{loadingLive ? 'Loading live check-ins…' : copy.noLiveData}</span>
-                  <strong>—</strong>
-                </div>
-              )}
-
-              {points.length === 0 && !loadingLive && (
                 <div className="map-empty-state">
-                  <span className="empty-pulse">◎</span>
+                  <img src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" />
                   <strong>{hasLiveBackend ? copy.noLiveData : copy.disconnected}</strong>
-                  <p>{hasLiveBackend ? copy.noLiveDataBody : copy.backendRequired}</p>
+                  <span>{hasLiveBackend ? copy.noLiveDataBody : copy.backendRequired}</span>
                 </div>
               )}
 
-              <div className="map-hint">{copy.mapHint}</div>
               <div className="range-selector segmented">
                 {(['now', '24h', '7d', '30d'] as TimeRange[]).map((value) => (
                   <button key={value} className={range === value ? 'is-active' : ''} onClick={() => setRange(value)}>
@@ -348,52 +365,65 @@ export default function App() {
               </div>
             </div>
 
-            <div className="stats-strip">
-              <div><span>{copy.responses}</span><strong>{summary ? summary.responses.toLocaleString() : '0'}</strong></div>
-              <div><span>{copy.mappedAreas}</span><strong>{summary ? summary.mappedAreas.toLocaleString() : '0'}</strong></div>
-              <div><span>{copy.moodShift}</span><strong>{summary?.delta == null ? '—' : `${summary.delta >= 0 ? '+' : ''}${summary.delta.toFixed(1)}`}</strong></div>
-              <div><span>{copy.dataAge}</span><strong>{relativeTime(summary?.latestAt)}</strong></div>
+            <div className="map-helper"><span>{copy.mapHint}</span><strong>{copy.realDataOnly}</strong></div>
+
+            <div className="stats-strip four">
+              <div><span>{copy.responses}</span><strong>{summary ? summary.responses.toLocaleString() : '—'}</strong></div>
+              <div><span>{copy.mappedAreas}</span><strong>{summary ? summary.mappedAreas.toLocaleString() : '—'}</strong></div>
+              <div><span>{copy.trending}</span><strong>{summary ? `${emotionMeta[summary.trendingEmotion].emoji} ${emotionMeta[summary.trendingEmotion].name}` : '—'}</strong></div>
+              <div><span>{copy.resonances}</span><strong>{summary ? summary.resonances.toLocaleString() : '—'}</strong></div>
             </div>
 
-            <div className={`data-truth-note ${liveState === 'live' ? '' : 'is-warning'}`}>
-              <Sparkles size={17} />
-              <span><strong>{copy.realDataOnly}.</strong> {liveState === 'live' ? copy.realDataHint : `${liveLabel}. ${copy.realDataHint}`}</span>
-            </div>
+            {summary && (
+              <div className="world-pulse-card">
+                <div className="world-pulse-copy">
+                  <span><Radio size={14} /> WORLD PULSE</span>
+                  <strong>{summary.label}</strong>
+                  <p>{summary.delta == null ? 'Collecting enough history to calculate a shift.' : `${summary.delta > 0 ? '+' : ''}${summary.delta.toFixed(1)} mood points versus the previous period.`}</p>
+                </div>
+                <div className="emotion-ribbon">
+                  {emotionDistribution.map((item) => (
+                    <div key={item.emotion} className="emotion-ribbon-item">
+                      <span>{emotionMeta[item.emotion].emoji}</span>
+                      <div><strong>{emotionMeta[item.emotion].name}</strong><small>{item.percent}%</small></div>
+                      <i style={{ '--share': `${item.percent}%` } as CSSProperties} />
+                    </div>
+                  ))}
+                </div>
+                <div className="world-pulse-meta">
+                  <span>Latest {relativeTime(summary.latestAt)}</span>
+                  <span>{loadingLive ? 'Syncing…' : 'Auto refresh 12s'}</span>
+                </div>
+              </div>
+            )}
+
+            <PulseFeed entries={currentEntries} reactedIds={reactedIds} onReact={react} compact />
           </section>
         )}
 
-        {view === 'explore' && <Explore points={points} />}
+        {view === 'explore' && <Explore points={points} entries={currentEntries} reactedIds={reactedIds} onReact={react} />}
         {view === 'journal' && <Journal entries={journal} onCheckIn={() => setComposerOpen(true)} />}
-        {view === 'settings' && (
-          <Settings
-            theme={theme}
-            setTheme={setTheme}
-            canInstall={Boolean(deferredPrompt)}
-            installed={installed}
-            onInstall={install}
-            onClear={clearJournal}
-          />
-        )}
+        {view === 'settings' && <Settings theme={theme} setTheme={setTheme} canInstall={Boolean(deferredPrompt)} installed={installed} onInstall={install} onClear={clearJournal} liveConnected={hasLiveBackend} />}
       </main>
 
+      <button className="mobile-pulse-fab" onClick={() => setComposerOpen(true)} aria-label="Share your mood"><span>+</span></button>
       <BottomNav view={view} onChange={setView} />
-      <button className="floating-checkin" onClick={() => setComposerOpen(true)} aria-label={copy.checkIn}>＋</button>
-      <MoodComposer open={composerOpen} liveSharing={hasLiveBackend} onClose={() => setComposerOpen(false)} onSubmit={submitMood} />
+      <MoodComposer open={composerOpen} liveSharing={hasLiveBackend && !backendError} onClose={() => setComposerOpen(false)} onSubmit={submitMood} />
 
       {showOnboarding && (
         <div className="onboarding-backdrop">
-          <section className="onboarding-card">
-            <Logo />
-            <div className="onboard-globe"><span>😊</span><i /><i /><i /></div>
-            <h1>{copy.onboardTitle}</h1>
+          <section className="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+            <img className="onboarding-logo" src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" />
+            <span className="eyebrow">WELCOME TO WORLD MOOD</span>
+            <h2 id="onboarding-title">{copy.onboardTitle}</h2>
             <p>{copy.onboardBody}</p>
-            <div className="onboard-points">
-              <span>🔒 {copy.onboardPrivacy}</span>
-              <span>⚡ {copy.onboardFast}</span>
-              <span>📓 {copy.onboardJournal}</span>
-              <span>✓ {copy.onboardReal}</span>
+            <div className="onboarding-features">
+              <span>{copy.onboardPrivacy}</span>
+              <span>{copy.onboardFast}</span>
+              <span>{copy.onboardJournal}</span>
+              <span>{copy.onboardReal}</span>
             </div>
-            <button className="primary-button wide" onClick={finishOnboarding}>{copy.start}<ArrowUpRight size={18} /></button>
+            <button className="primary-button" onClick={finishOnboarding}>{copy.start}<ArrowUpRight size={18} /></button>
           </section>
         </div>
       )}

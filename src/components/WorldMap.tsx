@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
+import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
 import { geoNaturalEarth1, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import countries110 from 'world-atlas/countries-110m.json'
@@ -9,11 +9,15 @@ import type { MoodPoint } from '../lib/types'
 const WIDTH = 960
 const HEIGHT = 500
 const MIN_ZOOM = 1
-const MAX_ZOOM = 6
+const MAX_ZOOM = 7
 const projection = geoNaturalEarth1().scale(151).translate([WIDTH / 2, HEIGHT / 2])
 const path = geoPath(projection)
 
 type MapTransform = { x: number; y: number; k: number }
+type Pointer = { x: number; y: number }
+type Gesture =
+  | { mode: 'drag'; pointerId: number; start: Pointer; base: MapTransform }
+  | { mode: 'pinch'; distance: number; center: Pointer; base: MapTransform; anchor: Pointer }
 
 function scoreTone(score: number) {
   if (score >= 8) return 'var(--mood-great)'
@@ -36,6 +40,14 @@ function clampTransform(next: MapTransform): MapTransform {
   }
 }
 
+function distance(a: Pointer, b: Pointer) {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+function midpoint(a: Pointer, b: Pointer): Pointer {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+}
+
 export function WorldMap({ points, selectedId, onSelect }: {
   points: MoodPoint[]
   selectedId?: string
@@ -45,15 +57,24 @@ export function WorldMap({ points, selectedId, onSelect }: {
   const [transform, setTransform] = useState<MapTransform>({ x: 0, y: 0, k: 1 })
   const [dragging, setDragging] = useState(false)
   const svgRef = useRef<SVGSVGElement | null>(null)
-  const dragRef = useRef<{ pointerId: number; clientX: number; clientY: number; x: number; y: number } | null>(null)
+  const transformRef = useRef(transform)
+  const pointersRef = useRef(new Map<number, Pointer>())
+  const gestureRef = useRef<Gesture | null>(null)
+  transformRef.current = transform
 
   const countries = useMemo(() => {
-    const topo = countries110 as unknown as { objects: { countries: object } }
-    const result = feature(topo as never, topo.objects.countries as never) as unknown as {
-      features: Array<{ type: string; geometry: unknown; properties?: Record<string, unknown> }>
-    }
-    return result.features
+    const topo = countries110 as any
+    return (feature(topo, topo.objects.countries) as any).features as any[]
   }, [])
+
+  const clientToSvg = (point: Pointer) => {
+    const rect = svgRef.current?.getBoundingClientRect()
+    if (!rect) return { x: WIDTH / 2, y: HEIGHT / 2 }
+    return {
+      x: ((point.x - rect.left) / rect.width) * WIDTH,
+      y: ((point.y - rect.top) / rect.height) * HEIGHT
+    }
+  }
 
   const zoomAt = (factor: number, cx = WIDTH / 2, cy = HEIGHT / 2) => {
     setTransform((current) => {
@@ -70,37 +91,94 @@ export function WorldMap({ points, selectedId, onSelect }: {
 
   const onWheel = (event: ReactWheelEvent<SVGSVGElement>) => {
     event.preventDefault()
-    const rect = event.currentTarget.getBoundingClientRect()
-    const cx = ((event.clientX - rect.left) / rect.width) * WIDTH
-    const cy = ((event.clientY - rect.top) / rect.height) * HEIGHT
-    zoomAt(event.deltaY < 0 ? 1.18 : 1 / 1.18, cx, cy)
+    const center = clientToSvg({ x: event.clientX, y: event.clientY })
+    zoomAt(event.deltaY < 0 ? 1.16 : 1 / 1.16, center.x, center.y)
+  }
+
+  const beginPinch = () => {
+    const values = [...pointersRef.current.values()]
+    if (values.length < 2) return
+    const a = values[0]
+    const b = values[1]
+    const centerClient = midpoint(a, b)
+    const center = clientToSvg(centerClient)
+    const base = transformRef.current
+    gestureRef.current = {
+      mode: 'pinch',
+      distance: Math.max(1, distance(a, b)),
+      center,
+      base,
+      anchor: {
+        x: (center.x - base.x) / base.k,
+        y: (center.y - base.y) / base.k
+      }
+    }
   }
 
   const onPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (event.button !== 0) return
+    if (event.pointerType === 'mouse' && event.button !== 0) return
     event.currentTarget.setPointerCapture(event.pointerId)
-    dragRef.current = {
-      pointerId: event.pointerId,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      x: transform.x,
-      y: transform.y
-    }
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     setDragging(true)
+
+    if (pointersRef.current.size >= 2) {
+      beginPinch()
+      return
+    }
+
+    gestureRef.current = {
+      mode: 'drag',
+      pointerId: event.pointerId,
+      start: { x: event.clientX, y: event.clientY },
+      base: transformRef.current
+    }
   }
 
   const onPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
-    const start = dragRef.current
-    if (!start || start.pointerId !== event.pointerId || !svgRef.current) return
+    if (!pointersRef.current.has(event.pointerId)) return
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    if (pointersRef.current.size >= 2) {
+      if (gestureRef.current?.mode !== 'pinch') beginPinch()
+      const gesture = gestureRef.current
+      if (!gesture || gesture.mode !== 'pinch') return
+      const values = [...pointersRef.current.values()]
+      const a = values[0]
+      const b = values[1]
+      const currentCenter = clientToSvg(midpoint(a, b))
+      const ratio = distance(a, b) / gesture.distance
+      const k = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, gesture.base.k * ratio))
+      setTransform(clampTransform({
+        k,
+        x: currentCenter.x - gesture.anchor.x * k,
+        y: currentCenter.y - gesture.anchor.y * k
+      }))
+      return
+    }
+
+    const gesture = gestureRef.current
+    if (!gesture || gesture.mode !== 'drag' || gesture.pointerId !== event.pointerId || !svgRef.current) return
     const rect = svgRef.current.getBoundingClientRect()
-    const dx = ((event.clientX - start.clientX) / rect.width) * WIDTH
-    const dy = ((event.clientY - start.clientY) / rect.height) * HEIGHT
-    setTransform((current) => clampTransform({ k: current.k, x: start.x + dx, y: start.y + dy }))
+    const dx = ((event.clientX - gesture.start.x) / rect.width) * WIDTH
+    const dy = ((event.clientY - gesture.start.y) / rect.height) * HEIGHT
+    setTransform(clampTransform({
+      k: gesture.base.k,
+      x: gesture.base.x + dx,
+      y: gesture.base.y + dy
+    }))
   }
 
-  const stopDrag = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null
-    setDragging(false)
+  const stopPointer = (event: ReactPointerEvent<SVGSVGElement>) => {
+    pointersRef.current.delete(event.pointerId)
+    if (pointersRef.current.size === 1) {
+      const [pointerId, point] = [...pointersRef.current.entries()][0]
+      gestureRef.current = { mode: 'drag', pointerId, start: point, base: transformRef.current }
+    } else if (pointersRef.current.size === 0) {
+      gestureRef.current = null
+      setDragging(false)
+    } else {
+      beginPinch()
+    }
   }
 
   return (
@@ -117,16 +195,17 @@ export function WorldMap({ points, selectedId, onSelect }: {
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={stopDrag}
-        onPointerCancel={stopDrag}
-        onDoubleClick={(event) => {
-          const rect = event.currentTarget.getBoundingClientRect()
-          zoomAt(1.45, ((event.clientX - rect.left) / rect.width) * WIDTH, ((event.clientY - rect.top) / rect.height) * HEIGHT)
+        onPointerUp={stopPointer}
+        onPointerCancel={stopPointer}
+        onPointerLeave={(event: ReactPointerEvent<SVGSVGElement>) => { if (event.pointerType === 'mouse' && event.buttons === 0) stopPointer(event) }}
+        onDoubleClick={(event: ReactMouseEvent<SVGSVGElement>) => {
+          const center = clientToSvg({ x: event.clientX, y: event.clientY })
+          zoomAt(1.45, center.x, center.y)
         }}
       >
         <g transform={`translate(${transform.x} ${transform.y}) scale(${transform.k})`}>
           <g className="countries">
-            {countries.map((country, index) => <path key={index} d={path(country as never) || ''} />)}
+            {countries.map((country, index) => <path key={index} d={path(country) || ''} />)}
           </g>
 
           <g className="mood-points">
@@ -144,21 +223,21 @@ export function WorldMap({ points, selectedId, onSelect }: {
                   style={{ '--point-color': tone, '--delay': `${(index % 12) * -0.27}s` } as CSSProperties}
                   onMouseEnter={() => setHoveredId(point.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  onClick={(event) => { event.stopPropagation(); onSelect(point) }}
+                  onClick={(event: ReactMouseEvent<SVGGElement>) => { event.stopPropagation(); onSelect(point) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(point) }}
+                  onKeyDown={(event: ReactKeyboardEvent<SVGGElement>) => { if (event.key === 'Enter' || event.key === ' ') onSelect(point) }}
                   aria-label={`${point.label}, mood ${point.score.toFixed(1)}, ${point.activity} real check-ins`}
                 >
                   <circle className="point-aura" r={radius * 3.3} />
                   <circle className="point-pulse" r={radius * 1.55} />
                   <circle className="point-core" r={radius} />
                   {active && (
-                    <g className="map-tooltip" transform="translate(14,-54)">
-                      <rect x="0" y="0" rx="12" width="190" height="64" />
+                    <g className="map-tooltip" transform="translate(14,-58)">
+                      <rect x="0" y="0" rx="12" width="200" height="68" />
                       <text x="12" y="22" className="tooltip-title">{point.label}</text>
                       <text x="12" y="43" className="tooltip-meta">{emotionMeta[point.emotion].emoji} {point.score.toFixed(1)} · {point.activity} check-in{point.activity === 1 ? '' : 's'}</text>
-                      <text x="12" y="56" className="tooltip-detail">{point.detail}</text>
+                      <text x="12" y="58" className="tooltip-detail">{point.detail}</text>
                     </g>
                   )}
                 </g>

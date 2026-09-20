@@ -6,14 +6,19 @@ $Source = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Work = Join-Path $env:TEMP "world-mood-deploy"
 
 Write-Host ""
-Write-Host "World Mood v0.0.1 deployment" -ForegroundColor Cyan
-Write-Host "English-only UI, real data only, responsive light/dark mode, interactive map" -ForegroundColor DarkGray
+Write-Host "World Mood v0.0.2 deployment" -ForegroundColor Cyan
+Write-Host "Live social pulse, unified brand, PWA splash, map-only zoom and real data architecture" -ForegroundColor DarkGray
 Write-Host ""
 
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    throw "Git is not installed or is not available in PATH."
+    Write-Host "Git is missing. Installing with winget..." -ForegroundColor Yellow
+    winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    throw "Git is still not available in PATH. Open a new PowerShell window and run this script again."
 }
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
@@ -33,7 +38,6 @@ if (-not (git config --global user.name)) {
     $login = (& gh api user --jq .login).Trim()
     git config --global user.name $login
 }
-
 if (-not (git config --global user.email)) {
     $login = (& gh api user --jq .login).Trim()
     $userId = (& gh api user --jq .id).Trim()
@@ -47,7 +51,11 @@ if (Test-Path $Work) {
 git clone $RepoUrl $Work
 if ($LASTEXITCODE -ne 0) { throw "Could not clone $RepoUrl" }
 
-Write-Host "Syncing the complete project..." -ForegroundColor Cyan
+Set-Location $Work
+git config core.autocrlf false
+Set-Location $Source
+
+Write-Host "Syncing the complete v0.0.2 project..." -ForegroundColor Cyan
 $null = robocopy $Source $Work /MIR /XD .git node_modules dist /XF *.zip
 if ($LASTEXITCODE -gt 7) { throw "Robocopy failed with exit code $LASTEXITCODE" }
 
@@ -56,7 +64,7 @@ Set-Location $Work
 git add -A
 $changes = git status --porcelain
 if ($changes) {
-    git commit -m "Refine World Mood v0.0.1: real data, English UI, map zoom, responsive light mode"
+    git commit -m "World Mood v0.0.2: live social pulse, brand system and PWA polish"
     git push origin main
     if ($LASTEXITCODE -ne 0) { throw "Git push failed." }
 } else {
@@ -71,7 +79,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $sha = (git rev-parse HEAD).Trim()
 $run = $null
-for ($i = 0; $i -lt 15 -and -not $run; $i++) {
+for ($i = 0; $i -lt 20 -and -not $run; $i++) {
     Start-Sleep -Seconds 2
     $runsJson = & gh run list --workflow="deploy.yml" --branch main --limit 10 --json databaseId,headSha,status,conclusion
     if ($LASTEXITCODE -eq 0 -and $runsJson) {
@@ -93,9 +101,20 @@ if ($run) {
     Write-Host "Check: https://github.com/$Repo/actions"
 }
 
+$vars = (& gh variable list --repo $Repo --json name 2>$null | ConvertFrom-Json)
+$secrets = (& gh secret list --repo $Repo --json name 2>$null | ConvertFrom-Json)
+$hasUrl = $vars | Where-Object { $_.name -eq 'VITE_SUPABASE_URL' }
+$hasKey = $secrets | Where-Object { $_.name -eq 'VITE_SUPABASE_ANON_KEY' }
+
 Write-Host ""
 Write-Host "Deployment finished." -ForegroundColor Green
 Write-Host "Repository: https://github.com/$Repo"
 Write-Host "Site: https://donacgreece.github.io/World_Mood/"
 Write-Host ""
-Write-Host "Important: the public mood map intentionally shows no fake data. Add the Supabase URL and anon key in GitHub Actions settings to enable real shared submissions." -ForegroundColor Yellow
+
+if (-not ($hasUrl -and $hasKey)) {
+    Write-Host "The application is live, but the shared network still needs Supabase credentials." -ForegroundColor Yellow
+    Write-Host "Run setup-live-backend.ps1 after creating a Supabase project and running supabase/schema.sql." -ForegroundColor Yellow
+} else {
+    Write-Host "Supabase GitHub configuration is present. Public activity will come only from real submissions." -ForegroundColor Green
+}

@@ -1,4 +1,4 @@
-﻿import type { MoodEntry } from './types'
+import type { MoodEntry } from './types'
 
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '')
@@ -11,64 +11,70 @@ const headers = {
   'Content-Type': 'application/json'
 }
 
-export async function submitLiveMood(entry: MoodEntry) {
-  if (!hasLiveBackend) return false
-  const body = {
-    mood_score: entry.score,
-    emotion: entry.emotion,
-    intensity: entry.intensity,
-    reason: entry.reason || null,
-    lat_bucket: entry.lat ?? null,
-    lng_bucket: entry.lng ?? null,
-    country_code: entry.countryCode || null
+export class LiveRateLimitError extends Error {
+  constructor() {
+    super('RATE_LIMIT')
+    this.name = 'LiveRateLimitError'
   }
+}
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/mood_entries`, {
+async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  if (!hasLiveBackend) throw new Error('LIVE_BACKEND_NOT_CONFIGURED')
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: 'POST',
-    headers: { ...headers, Prefer: 'return=minimal' },
+    headers,
     body: JSON.stringify(body)
   })
 
-  if (!response.ok) throw new Error(`Mood submission failed with ${response.status}`)
-  return true
-}
-
-export async function fetchLiveMoods(sinceIso: string): Promise<MoodEntry[]> {
-  if (!hasLiveBackend) return []
-
-  const results: MoodEntry[] = []
-  const pageSize = 1000
-  const maxRows = 10000
-
-  for (let offset = 0; offset < maxRows; offset += pageSize) {
-    const query = new URLSearchParams({
-      select: 'id,mood_score,emotion,intensity,reason,lat_bucket,lng_bucket,country_code,created_at',
-      created_at: `gte.${sinceIso}`,
-      order: 'created_at.desc',
-      limit: String(pageSize),
-      offset: String(offset)
-    })
-
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/mood_entries?${query.toString()}`, { headers })
-    if (!response.ok) throw new Error(`Mood feed failed with ${response.status}`)
-
-    const rows = await response.json() as Array<Record<string, unknown>>
-    results.push(...rows.map((row): MoodEntry => ({
-      id: String(row.id),
-      score: Number(row.mood_score),
-      emotion: String(row.emotion) as MoodEntry['emotion'],
-      intensity: Number(row.intensity),
-      reason: row.reason ? String(row.reason) as MoodEntry['reason'] : undefined,
-      lat: row.lat_bucket == null ? undefined : Number(row.lat_bucket),
-      lng: row.lng_bucket == null ? undefined : Number(row.lng_bucket),
-      countryCode: row.country_code ? String(row.country_code) : undefined,
-      createdAt: String(row.created_at),
-      source: 'supabase'
-    })))
-
-    if (rows.length < pageSize) break
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    if (text.includes('RATE_LIMIT')) throw new LiveRateLimitError()
+    throw new Error(`${name} failed with ${response.status}${text ? `: ${text.slice(0, 180)}` : ''}`)
   }
 
-  return results
+  if (response.status === 204) return undefined as T
+  return response.json() as Promise<T>
 }
 
+export async function submitLiveMood(entry: MoodEntry, actorHash: string) {
+  return rpc<Array<{ id: string; created_at: string }>>('submit_mood', {
+    p_mood_score: entry.score,
+    p_emotion: entry.emotion,
+    p_intensity: entry.intensity,
+    p_reason: entry.reason ?? null,
+    p_lat_bucket: entry.lat ?? null,
+    p_lng_bucket: entry.lng ?? null,
+    p_country_code: entry.countryCode ?? null,
+    p_actor_hash: actorHash
+  })
+}
+
+export async function fetchLiveMoods(sinceIso: string, limit = 3000): Promise<MoodEntry[]> {
+  if (!hasLiveBackend) return []
+
+  const rows = await rpc<Array<Record<string, unknown>>>('get_live_moods', {
+    p_since: sinceIso,
+    p_limit: Math.max(1, Math.min(5000, limit))
+  })
+
+  return rows.map((row): MoodEntry => ({
+    id: String(row.id),
+    score: Number(row.mood_score),
+    emotion: String(row.emotion) as MoodEntry['emotion'],
+    intensity: Number(row.intensity),
+    reason: row.reason ? String(row.reason) as MoodEntry['reason'] : undefined,
+    lat: row.lat_bucket == null ? undefined : Number(row.lat_bucket),
+    lng: row.lng_bucket == null ? undefined : Number(row.lng_bucket),
+    countryCode: row.country_code ? String(row.country_code).toUpperCase() : undefined,
+    createdAt: String(row.created_at),
+    resonanceCount: Number(row.resonance_count || 0),
+    source: 'supabase'
+  }))
+}
+
+export async function reactToMood(entryId: string, actorHash: string) {
+  return rpc<number>('react_to_mood', {
+    p_entry_id: entryId,
+    p_actor_hash: actorHash
+  })
+}
