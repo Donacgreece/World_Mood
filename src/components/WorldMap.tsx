@@ -1,9 +1,8 @@
-import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
 import { geoNaturalEarth1, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import countries110 from 'world-atlas/countries-110m.json'
 import { Minus, Plus, RotateCcw } from 'lucide-react'
-import { emotionMeta } from '../i18n'
 import type { MoodPoint } from '../lib/types'
 
 const WIDTH = 960
@@ -66,6 +65,23 @@ export function WorldMap({ points, selectedId, onSelect }: {
     const topo = countries110 as any
     return (feature(topo, topo.objects.countries) as any).features as any[]
   }, [])
+
+  useEffect(() => {
+    if (!selectedId) return
+    const point = points.find((item) => item.id === selectedId)
+    if (!point) return
+    const coords = projection([point.lng, point.lat])
+    if (!coords) return
+
+    setTransform((current) => {
+      const k = Math.max(current.k, 2.15)
+      return clampTransform({
+        k,
+        x: WIDTH / 2 - coords[0] * k,
+        y: HEIGHT / 2 - coords[1] * k
+      })
+    })
+  }, [points, selectedId])
 
   const clientToSvg = (point: Pointer) => {
     const rect = svgRef.current?.getBoundingClientRect()
@@ -232,14 +248,6 @@ export function WorldMap({ points, selectedId, onSelect }: {
                   <circle className="point-aura" r={radius * 3.3} />
                   <circle className="point-pulse" r={radius * 1.55} />
                   <circle className="point-core" r={radius} />
-                  {active && (
-                    <g className="map-tooltip" transform="translate(14,-58)">
-                      <rect x="0" y="0" rx="12" width="200" height="68" />
-                      <text x="12" y="22" className="tooltip-title">{point.label}</text>
-                      <text x="12" y="43" className="tooltip-meta">{emotionMeta[point.emotion].emoji} {point.score.toFixed(1)} · {point.activity} check-in{point.activity === 1 ? '' : 's'}</text>
-                      <text x="12" y="58" className="tooltip-detail">{point.detail}</text>
-                    </g>
-                  )}
                 </g>
               )
             })}

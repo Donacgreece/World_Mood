@@ -37,7 +37,7 @@ if (-not $SupabaseUrl) {
     $SupabaseUrl = Read-Host "Paste your Supabase Project URL"
 }
 if (-not $AnonKey) {
-    $secure = Read-Host "Paste your Supabase public anonymous key" -AsSecureString
+    $secure = Read-Host "Paste your Supabase publishable key (sb_publishable_... recommended)" -AsSecureString
     $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     try {
         $AnonKey = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)

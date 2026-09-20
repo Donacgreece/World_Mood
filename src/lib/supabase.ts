@@ -5,10 +5,20 @@ const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '')
 
 export const hasLiveBackend = Boolean(SUPABASE_URL && SUPABASE_KEY)
 
-const headers = {
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json'
+function requestHeaders(): HeadersInit {
+  const next: Record<string, string> = {
+    apikey: SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    Accept: 'application/json'
+  }
+
+  // Legacy anon keys are JWTs and can be sent as Bearer tokens. Modern
+  // sb_publishable_* keys must stay in the apikey header only.
+  if (SUPABASE_KEY.startsWith('eyJ')) {
+    next.Authorization = `Bearer ${SUPABASE_KEY}`
+  }
+
+  return next
 }
 
 export class LiveRateLimitError extends Error {
@@ -18,22 +28,48 @@ export class LiveRateLimitError extends Error {
   }
 }
 
+export class LiveNetworkError extends Error {
+  status?: number
+
+  constructor(message: string, status?: number) {
+    super(message)
+    this.name = 'LiveNetworkError'
+    this.status = status
+  }
+}
+
 async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  if (!hasLiveBackend) throw new Error('LIVE_BACKEND_NOT_CONFIGURED')
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body)
-  })
+  if (!hasLiveBackend) throw new LiveNetworkError('LIVE_BACKEND_NOT_CONFIGURED')
+
+  let response: Response
+  try {
+    response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      headers: requestHeaders(),
+      body: JSON.stringify(body)
+    })
+  } catch {
+    throw new LiveNetworkError('NETWORK_UNREACHABLE')
+  }
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     if (text.includes('RATE_LIMIT')) throw new LiveRateLimitError()
-    throw new Error(`${name} failed with ${response.status}${text ? `: ${text.slice(0, 180)}` : ''}`)
+    throw new LiveNetworkError(`${name} failed${text ? `: ${text.slice(0, 220)}` : ''}`, response.status)
   }
 
   if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
+}
+
+export async function checkLiveBackend() {
+  if (!hasLiveBackend) return false
+  await rpc<Array<Record<string, unknown>>>('get_live_moods', {
+    p_since: new Date(Date.now() - 60_000).toISOString(),
+    p_limit: 1
+  })
+  return true
 }
 
 export async function submitLiveMood(entry: MoodEntry, actorHash: string) {

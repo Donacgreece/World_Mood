@@ -1,5 +1,5 @@
 import { useMemo, useState, type ChangeEvent as ReactChangeEvent, type MouseEvent as ReactMouseEvent } from 'react'
-import { Check, LocateFixed, MapPinOff, ShieldCheck, X } from 'lucide-react'
+import { Check, LocateFixed, MapPin, ShieldCheck, X } from 'lucide-react'
 import { copy, emotionMeta, reasonMeta } from '../i18n'
 import { countryForCoordinates } from '../lib/geo'
 import type { EmotionKey, MoodEntry, ReasonKey, SubmitResult } from '../lib/types'
@@ -17,6 +17,30 @@ const scoreByEmotion: Record<EmotionKey, number> = {
   angry: 2.8
 }
 
+type ApproximateLocation = { lat: number; lng: number; countryCode?: string }
+
+function requestApproximateLocation(): Promise<ApproximateLocation> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('GEOLOCATION_UNAVAILABLE'))
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const country = countryForCoordinates(coords.latitude, coords.longitude)
+        resolve({
+          lat: Math.round(coords.latitude * 2) / 2,
+          lng: Math.round(coords.longitude * 2) / 2,
+          countryCode: country?.code
+        })
+      },
+      reject,
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 10 * 60 * 1000 }
+    )
+  })
+}
+
 export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
   open: boolean
   liveSharing: boolean
@@ -25,12 +49,14 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
 }) {
   const [emotion, setEmotion] = useState<EmotionKey>('good')
   const [intensity, setIntensity] = useState(3)
-  const [reason, setReason] = useState<ReasonKey | undefined>(undefined)
+  const [reason, setReason] = useState<ReasonKey | undefined>()
   const [note, setNote] = useState('')
-  const [location, setLocation] = useState<{ lat: number; lng: number; countryCode?: string } | null>(null)
+  const [mapLocationEnabled, setMapLocationEnabled] = useState(true)
+  const [location, setLocation] = useState<ApproximateLocation | null>(null)
   const [locating, setLocating] = useState(false)
   const [sent, setSent] = useState(false)
   const [shared, setShared] = useState(false)
+  const [mapped, setMapped] = useState(false)
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -42,36 +68,42 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
 
   if (!open) return null
 
-  const locate = () => {
-    if (!navigator.geolocation) {
-      setMessage('Location is not available in this browser.')
-      return
-    }
-
+  const locate = async () => {
     setLocating(true)
     setMessage(null)
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const country = countryForCoordinates(coords.latitude, coords.longitude)
-        setLocation({
-          lat: Math.round(coords.latitude * 2) / 2,
-          lng: Math.round(coords.longitude * 2) / 2,
-          countryCode: country?.code
-        })
-        setLocating(false)
-      },
-      () => {
-        setLocating(false)
-        setMessage('Location permission was not granted. You can still share your mood without location.')
-      },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 15 * 60 * 1000 }
-    )
+    try {
+      const next = await requestApproximateLocation()
+      setLocation(next)
+      setMapLocationEnabled(true)
+      return next
+    } catch {
+      setMessage('Location permission is needed to place your pulse on the map. You can turn Map placement off and still share anonymously.')
+      return null
+    } finally {
+      setLocating(false)
+    }
+  }
+
+  const toggleMapLocation = () => {
+    const next = !mapLocationEnabled
+    setMapLocationEnabled(next)
+    setMessage(null)
+    if (!next) setLocation(null)
   }
 
   const submit = async () => {
-    if (sending) return
+    if (sending || locating) return
     setSending(true)
     setMessage(null)
+
+    let resolvedLocation = location
+    if (mapLocationEnabled && !resolvedLocation) {
+      resolvedLocation = await locate()
+      if (!resolvedLocation) {
+        setSending(false)
+        return
+      }
+    }
 
     const entry: MoodEntry = {
       id: crypto.randomUUID(),
@@ -80,15 +112,16 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
       intensity,
       reason,
       note: note.trim() || undefined,
-      lat: location?.lat,
-      lng: location?.lng,
-      countryCode: location?.countryCode,
+      lat: mapLocationEnabled ? resolvedLocation?.lat : undefined,
+      lng: mapLocationEnabled ? resolvedLocation?.lng : undefined,
+      countryCode: mapLocationEnabled ? resolvedLocation?.countryCode : undefined,
       createdAt: new Date().toISOString(),
       source: 'local'
     }
 
     const result = await onSubmit(entry)
     setShared(result.shared)
+    setMapped(Boolean(result.shared && entry.lat != null && entry.lng != null))
     if (result.reason === 'rate-limit') setMessage(copy.rateLimited)
     if (result.reason === 'network-error') setMessage('Your private journal was saved, but the live network could not receive this pulse.')
     setSent(true)
@@ -100,9 +133,11 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
     setIntensity(3)
     setReason(undefined)
     setNote('')
+    setMapLocationEnabled(true)
     setLocation(null)
     setSent(false)
     setShared(false)
+    setMapped(false)
     setMessage(null)
     onClose()
   }
@@ -121,7 +156,7 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
 
         {!sent ? (
           <>
-            <div className="emotion-grid">
+            <div className="emotion-grid" aria-label="Choose your mood">
               {emotions.map((key) => (
                 <button
                   key={key}
@@ -137,7 +172,7 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
 
             <div className="composer-section intensity-section">
               <div className="field-label"><span>{copy.intensity}</span><strong>{intensity}/5</strong></div>
-              <div className="intensity-row">
+              <div className="intensity-row" role="group" aria-label="Mood intensity">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <button key={value} className={intensity === value ? 'is-selected' : ''} onClick={() => setIntensity(value)} aria-label={`Intensity ${value}`}>
                     <span />
@@ -161,15 +196,25 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
             <label className="composer-section note-field">
               <div className="field-label"><span>{copy.note}</span><em>{copy.optional}</em></div>
               <textarea maxLength={160} value={note} onChange={(event: ReactChangeEvent<HTMLTextAreaElement>) => setNote(event.target.value)} placeholder={copy.notePlaceholder} />
-              <small>{note.length}/160 · never shared publicly</small>
+              <small>{note.length}/160 · private on this device</small>
             </label>
 
-            <div className="location-box">
-              <button onClick={location ? () => setLocation(null) : locate} disabled={locating}>
-                {location ? <MapPinOff size={18} /> : <LocateFixed size={18} />}
-                {locating ? 'Finding approximate location…' : location ? copy.locationOn : copy.location}
-              </button>
-              <span>{copy.locationHelp}</span>
+            <div className={`map-placement ${mapLocationEnabled ? 'is-enabled' : ''}`}>
+              <div className="map-placement-copy">
+                <div className="map-placement-icon"><MapPin size={19} /></div>
+                <div>
+                  <strong>Place this pulse on the live map</strong>
+                  <span>{location ? `Approximate area ready${location.countryCode ? ` · ${location.countryCode}` : ''}` : 'On by default. We will ask for location only when you post.'}</span>
+                </div>
+              </div>
+              <button className={`switch-control ${mapLocationEnabled ? 'is-on' : ''}`} onClick={toggleMapLocation} role="switch" aria-checked={mapLocationEnabled} aria-label="Share approximate map location"><i /></button>
+              {mapLocationEnabled && (
+                <button className="location-preview-button" onClick={locate} disabled={locating}>
+                  <LocateFixed size={16} />
+                  {locating ? 'Finding area…' : location ? 'Refresh area' : 'Set approximate area now'}
+                </button>
+              )}
+              <small>Exact GPS is never stored. Coordinates are rounded to a coarse 0.5° area before sharing.</small>
             </div>
 
             <div className="privacy-inline">
@@ -179,14 +224,16 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
 
             {!liveSharing && <div className="truth-notice">{copy.localOnlyNotice}</div>}
             {message && <div className="composer-message">{message}</div>}
-            <button className="primary-button composer-submit" onClick={submit} disabled={sending}>{sending ? 'Sending…' : copy.sendMood}</button>
+            <button className="primary-button composer-submit" onClick={submit} disabled={sending || locating}>
+              {locating ? 'Preparing map location…' : sending ? 'Sending pulse…' : mapLocationEnabled ? 'Share pulse on the map' : copy.sendMood}
+            </button>
           </>
         ) : (
           <div className="success-state">
             <div className="success-orb"><Check size={36} /></div>
             <span className="success-emoji">{emotionMeta[emotion].emoji}</span>
-            <h2>{copy.thanks}</h2>
-            <p>{shared ? copy.thanksLiveBody : copy.thanksLocalBody}</p>
+            <h2>{mapped ? 'You are on the map.' : copy.thanks}</h2>
+            <p>{mapped ? 'Your anonymous pulse is live and your approximate area is now glowing on the world map.' : shared ? 'Your anonymous pulse is live in the community feed without map location.' : copy.thanksLocalBody}</p>
             {message && <div className="composer-message">{message}</div>}
             <button className="primary-button" onClick={closeAndReset}>{copy.close}</button>
           </div>

@@ -7,7 +7,7 @@ $Work = Join-Path $env:TEMP "world-mood-deploy"
 
 Write-Host ""
 Write-Host "World Mood v0.0.2 deployment" -ForegroundColor Cyan
-Write-Host "Live social pulse, unified brand, PWA splash, map-only zoom and real data architecture" -ForegroundColor DarkGray
+Write-Host "Refined live map, reliable Supabase transport, responsive Apple-grade UI and map-first check-ins" -ForegroundColor DarkGray
 Write-Host ""
 
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
@@ -64,7 +64,7 @@ Set-Location $Work
 git add -A
 $changes = git status --porcelain
 if ($changes) {
-    git commit -m "World Mood v0.0.2: live social pulse, brand system and PWA polish"
+    git commit -m "World Mood v0.0.2: fix live map and refine responsive experience"
     git push origin main
     if ($LASTEXITCODE -ne 0) { throw "Git push failed." }
 } else {
