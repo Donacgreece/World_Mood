@@ -1,4 +1,4 @@
-import type { MoodEntry } from './types'
+﻿import type { MoodEntry } from './types'
 
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '')
@@ -53,7 +53,7 @@ export async function fetchLiveMoods(sinceIso: string): Promise<MoodEntry[]> {
     if (!response.ok) throw new Error(`Mood feed failed with ${response.status}`)
 
     const rows = await response.json() as Array<Record<string, unknown>>
-    results.push(...rows.map((row) => ({
+    results.push(...rows.map((row): MoodEntry => ({
       id: String(row.id),
       score: Number(row.mood_score),
       emotion: String(row.emotion) as MoodEntry['emotion'],
@@ -71,3 +71,4 @@ export async function fetchLiveMoods(sinceIso: string): Promise<MoodEntry[]> {
 
   return results
 }
+
