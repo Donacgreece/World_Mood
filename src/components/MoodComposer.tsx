@@ -6,15 +6,15 @@ import type { EmotionKey, MoodEntry, ReasonKey, SubmitResult } from '../lib/type
 
 const emotions: EmotionKey[] = ['great', 'good', 'calm', 'okay', 'tired', 'low', 'stressed', 'angry']
 const reasons: ReasonKey[] = ['work', 'family', 'money', 'health', 'love', 'weather', 'other']
-const scoreByEmotion: Record<EmotionKey, number> = {
-  great: 9,
-  good: 7.8,
-  calm: 6.8,
-  okay: 5.6,
-  tired: 4.7,
-  low: 3.7,
-  stressed: 3.1,
-  angry: 2.8
+const scoreByEmotion: Record<EmotionKey, readonly [number, number, number, number, number]> = {
+  great: [8.0, 8.5, 9.0, 9.5, 10.0],
+  good: [6.8, 7.3, 7.8, 8.3, 8.8],
+  calm: [5.8, 6.3, 6.8, 7.3, 7.8],
+  okay: [4.8, 5.2, 5.6, 6.0, 6.4],
+  tired: [5.1, 4.9, 4.7, 4.5, 4.3],
+  low: [4.5, 4.1, 3.7, 3.3, 2.9],
+  stressed: [4.3, 3.7, 3.1, 2.5, 1.9],
+  angry: [4.0, 3.4, 2.8, 2.2, 1.6]
 }
 
 type ApproximateLocation = { lat: number; lng: number; countryCode?: string }
@@ -60,11 +60,7 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const score = useMemo(() => {
-    const base = scoreByEmotion[emotion]
-    const direction = base >= 5.5 ? 1 : -1
-    return Math.max(1, Math.min(10, Number((base + (intensity - 3) * 0.22 * direction).toFixed(1))))
-  }, [emotion, intensity])
+  const score = useMemo(() => scoreByEmotion[emotion][intensity - 1], [emotion, intensity])
 
   if (!open) return null
 

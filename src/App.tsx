@@ -352,7 +352,7 @@ export default function App() {
       {!online && <div className="offline-banner"><WifiOff size={16} />{copy.offline}</div>}
 
       <aside className="desktop-rail" aria-label="Primary navigation">
-        <Logo compact />
+        <Logo compact onClick={() => { setView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
         <div className="rail-nav">
           <button className={view === 'home' ? 'is-active' : ''} onClick={() => setView('home')} aria-label="Now"><Globe2 /></button>
           <button className={view === 'explore' ? 'is-active' : ''} onClick={() => setView('explore')} aria-label="Explore"><Activity /></button>
@@ -364,7 +364,7 @@ export default function App() {
 
       <main className="main-area">
         <header className="topbar">
-          <Logo />
+          <Logo onClick={() => { setView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
           <div className="top-actions">
             <button className={`network-pill is-${liveState}`} title={copy.realDataHint} onClick={() => void refreshNetwork(false)} aria-label={`${liveLabel}. Refresh live network`}>
               <span className="live-dot" />

@@ -47,3 +47,11 @@ Live site: `https://donacgreece.github.io/World_Mood/`
 ## Map interaction hotfix
 
 This build keeps mood markers visually stable while zooming, uses a native non-passive wheel listener so desktop map zoom never scrolls the page at the same time, and uses cooperative mobile gestures so one finger scrolls the page while two fingers control map zoom. Marker colors now include an explicit legend and selected regions show the dominant emotion, score, approximate privacy grid, and real check-in count.
+
+
+### v0.0.2 UX refinement
+- Clickable brand returns to Now/Home.
+- iOS status bar no longer uses translucent mode.
+- Mood composer has improved mobile scrolling, spacing and symmetric reason controls.
+- Great + intensity 5 reaches 10.0/10.
+- Private note remains on-device and is labeled ‘A private note for future you’.
