@@ -1,0 +1,30 @@
+{
+  "name": "world-mood",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty"
+  },
+  "dependencies": {
+    "d3-geo": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "topojson-client": "latest",
+    "world-atlas": "latest"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/topojson-client": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vite-plugin-pwa": "latest"
+  }
+}

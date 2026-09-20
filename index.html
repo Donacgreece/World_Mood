@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="World Mood is a playful, privacy-first live map of how the world feels right now." />
+    <meta name="keywords" content="world mood, mood map, emotional weather, live mood, anonymous mood journal" />
+    <meta name="author" content="World Mood" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="World Mood · See how the world feels" />
+    <meta property="og:description" content="A playful, privacy-first emotional weather map of the world." />
+    <meta property="og:image" content="/World_Mood/og-image.svg" />
+    <meta property="og:url" content="https://donacgreece.github.io/World_Mood/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="World Mood" />
+    <meta name="twitter:description" content="See how the world feels, right now." />
+    <meta name="twitter:image" content="/World_Mood/og-image.svg" />
+    <link rel="canonical" href="https://donacgreece.github.io/World_Mood/" />
+    <link rel="icon" href="/World_Mood/favicon.ico" sizes="any" />
+    <link rel="icon" href="/World_Mood/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/World_Mood/apple-touch-icon.png" />
+    <title>World Mood · See how the world feels</title>
+    <script>
+      try {
+        const theme = localStorage.getItem('worldmood-theme') || 'system';
+        const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>World Mood needs JavaScript enabled to run.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

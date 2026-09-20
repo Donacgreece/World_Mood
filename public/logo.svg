@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" role="img" aria-labelledby="title desc">
+  <title id="title">World Mood</title><desc id="desc">World Mood logo</desc>
+  <defs><linearGradient id="g" x1="8" y1="4" x2="65" y2="68" gradientUnits="userSpaceOnUse"><stop stop-color="#79E7FF"/><stop offset=".52" stop-color="#8E88FF"/><stop offset="1" stop-color="#FF81B7"/></linearGradient></defs>
+  <g transform="translate(4 4)"><circle cx="36" cy="36" r="32" fill="url(#g)"/><path d="M17.5 34.5c6.4-5.4 12.2-8 17.7-8 7.2 0 13.5 4 18 11.9" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="24.5" cy="26" r="3.1" fill="#fff"/><circle cx="48" cy="28.8" r="3.1" fill="#fff"/><path d="M24 45.3c3.5 4.1 7.6 6.1 12.3 6.1 4.7 0 8.9-2 12.7-6.2" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round"/></g>
+  <text x="88" y="41" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="800" fill="#172039">World Mood</text>
+  <text x="89" y="60" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="600" fill="#6f7893">FEEL THE PLANET</text>
+</svg>
