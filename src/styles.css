@@ -1744,3 +1744,92 @@ body::after {
   .journey-actions { display:grid; grid-template-columns:1fr; }
   .journey-actions .secondary-button { width:100%; }
 }
+
+
+/* v0.0.4 composer containment + responsive chip fix */
+.composer-sheet {
+  overflow:hidden !important;
+  scrollbar-width:none !important;
+  padding:0 !important;
+}
+.composer-sheet::-webkit-scrollbar { display:none !important; }
+
+.composer-scroll {
+  width:100%;
+  max-height:min(94dvh,920px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
+  scroll-padding-top:92px;
+  scroll-padding-bottom:140px;
+  padding:22px clamp(18px,4vw,34px) calc(24px + var(--safe-bottom));
+  scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--brand) 72%, var(--brand-2)) transparent;
+}
+.composer-scroll::-webkit-scrollbar { width:6px; }
+.composer-scroll::-webkit-scrollbar-track {
+  background:transparent;
+  margin-block:28px 24px;
+}
+.composer-scroll::-webkit-scrollbar-thumb {
+  background:linear-gradient(180deg,var(--brand),var(--brand-2));
+  border:1px solid transparent;
+  background-clip:padding-box;
+  border-radius:999px;
+}
+.composer-scroll::-webkit-scrollbar-button { display:none !important; width:0 !important; height:0 !important; }
+
+.reason-chips {
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit,minmax(108px,1fr)) !important;
+  gap:9px !important;
+}
+.reason-chips button {
+  width:100% !important;
+  min-width:0 !important;
+  min-height:42px;
+  padding:8px 10px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:normal !important;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  line-height:1.15;
+}
+.reason-chips button:last-child { grid-column:auto !important; }
+
+@media (max-width:700px) {
+  .composer-sheet {
+    width:100%;
+    height:calc(100dvh - max(var(--safe-top),10px));
+    max-height:none;
+    border-radius:30px 30px 0 0;
+  }
+  .composer-scroll {
+    height:100%;
+    max-height:none;
+    padding:20px 20px calc(132px + var(--safe-bottom));
+    scrollbar-gutter:auto;
+  }
+  .composer-scroll::-webkit-scrollbar { width:4px; }
+  .composer-scroll::-webkit-scrollbar-track { margin-block:34px 28px; }
+  .reason-chips {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+@media (max-width:420px) {
+  .composer-scroll {
+    padding-left:16px;
+    padding-right:16px;
+    padding-bottom:calc(140px + var(--safe-bottom));
+  }
+  .reason-chips button {
+    font-size:9px;
+    padding-inline:8px !important;
+  }
+}

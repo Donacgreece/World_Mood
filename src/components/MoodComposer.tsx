@@ -106,6 +106,7 @@ export function MoodComposer({ open, initialEmotion, liveSharing, events = [], o
   return (
     <div className="composer-backdrop" role="presentation" onMouseDown={(event: ReactMouseEvent<HTMLDivElement>) => { if (event.target === event.currentTarget) reset() }}>
       <section className="composer-sheet" role="dialog" aria-modal="true" aria-labelledby="mood-composer-title">
+        <div className="composer-scroll">
         <header className="composer-head">
           <div><span className="eyebrow">YOUR PULSE</span><h2 id="mood-composer-title">{copy.howFeel}</h2><p>{initialEmotion ? 'Your mood is selected. Add intensity and share in seconds, or add context if you want.' : copy.chooseEmotion}</p></div>
           <button className="icon-button" onClick={reset} aria-label="Close"><X size={19} /></button>
@@ -172,6 +173,7 @@ export function MoodComposer({ open, initialEmotion, liveSharing, events = [], o
             <button className="primary-button" onClick={reset}>{copy.close}</button>
           </div>
         )}
+        </div>
       </section>
     </div>
   )

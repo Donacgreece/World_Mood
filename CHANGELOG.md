@@ -53,3 +53,8 @@
 - Added a Buy Me a Coffee support button linking to https://buymeacoffee.com/moodaro.
 - Kept live network status inside the product surfaces where it is contextually useful.
 - Added compact responsive support-button behavior for mobile.
+
+
+## 0.0.4-composerfix
+- Moved composer scrolling into an inner container so the scrollbar stays clipped inside the rounded modal.
+- Added responsive reason-chip sizing and wrapping to prevent labels from overflowing at any width or browser zoom.
