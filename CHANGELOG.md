@@ -58,3 +58,10 @@
 ## 0.0.4-composerfix
 - Moved composer scrolling into an inner container so the scrollbar stays clipped inside the rounded modal.
 - Added responsive reason-chip sizing and wrapping to prevent labels from overflowing at any width or browser zoom.
+
+
+## 0.0.4-symmetryfix
+- Unified reason and mood-room controls into matching 3-column desktop grids.
+- Standardized button height, width, gaps and label alignment.
+- Centered the standalone Other reason in the final row.
+- Equalized both context panel heights for a balanced composer layout.
