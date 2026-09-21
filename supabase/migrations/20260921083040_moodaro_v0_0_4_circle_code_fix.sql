@@ -1,3 +1,4 @@
+-- Mirrors remote migration 20260921083040_moodaro_v0_0_4_circle_code_fix.
 create or replace function public.create_mood_circle(p_actor_hash text)
 returns table(code varchar, members bigint, checkins bigint, score numeric, emotion text, latest_at timestamptz, expires_at timestamptz)
 language plpgsql
@@ -21,5 +22,3 @@ begin
   return query select v_code, 0::bigint, 0::bigint, null::numeric, null::text, null::timestamptz, v_expires;
 end;
 $$;
-revoke execute on function public.create_mood_circle(text) from public, authenticated;
-grant execute on function public.create_mood_circle(text) to anon;

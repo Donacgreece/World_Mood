@@ -30,3 +30,6 @@ Private journal notes remain local on the device. Public micro-posts are optiona
 ## Backend
 
 The v0.0.4 migration is additive. Existing v0.0.3 RPCs are kept for backward compatibility. See `supabase/migrations/004_social_loops.sql`.
+
+## Supabase Preview
+The repository now contains the production migration history under `supabase/migrations/`, so the Supabase GitHub Preview check can reconcile the local and remote migration versions.

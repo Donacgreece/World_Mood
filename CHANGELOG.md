@@ -34,3 +34,8 @@
 - Removed the full-width pinned-header appearance introduced by the previous patch.
 - Neutralized only the narrow decorative color strip above the floating header.
 - Kept the glass transparency, rounded corners, sticky behavior and mobile safe-area behavior unchanged.
+
+## 0.0.4-migrationsync
+- Added the five versioned Supabase migration files that match the production migration history.
+- Fixed GitHub Supabase Preview failure: `Remote migration versions not found in local migrations directory`.
+- No production data or live RPC behavior changed.
