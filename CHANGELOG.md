@@ -41,3 +41,10 @@
 - Rebuilt the in-app splash screen with inline Moodaro logo for reliable standalone launch branding.
 - Reduced map pin size and moved the pin tip to the exact map coordinate.
 - Adjusted selected marker readout placement for the new pin geometry.
+
+
+## 0.0.3-splashfix
+- Rebuilt all iOS native startup images with the real Moodaro pin mascot.
+- Removed the old incomplete square splash artwork.
+- Versioned iOS splash filenames to bypass aggressive iOS PWA startup-image caching.
+- Matched native iOS splash styling to the in-app Moodaro launch screen.
