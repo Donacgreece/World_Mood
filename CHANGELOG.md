@@ -12,3 +12,11 @@
 - Added new PWA icons, favicon, social artwork and iOS splash screens.
 - Updated share-card branding.
 - Updated install and onboarding copy for Moodaro.
+
+
+## 0.0.3-responsivefix
+- Fixed hero headline overflow on mobile and desktop.
+- Removed width:max-content behavior from gradient headline line.
+- Added min-width:0 safeguards to hero grid children.
+- Tuned responsive headline sizes for small phones and tablets.
+- Improved quick mood card containment on very narrow widths.
