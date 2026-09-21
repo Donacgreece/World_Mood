@@ -1,9 +1,9 @@
 {
   "name": "moodaro",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
-  "description": "Moodaro is a playful live social mood map built from real anonymous check-ins.",
+  "description": "Moodaro is a playful privacy-first social mood network built from real anonymous pulses.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json --noEmit && vite build",

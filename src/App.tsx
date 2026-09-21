@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { Activity, ArrowUpRight, Download, Globe2, HeartPulse, MapPin, Moon, Radio, RefreshCw, Share2, Sparkles, Sun, WifiOff } from 'lucide-react'
+import { Activity, ArrowUpRight, Download, Globe2, HeartPulse, Link2, MapPin, Moon, Radio, RefreshCw, Share2, Sparkles, Sun, WifiOff } from 'lucide-react'
 import { BottomNav } from './components/BottomNav'
 import { Explore } from './components/Explore'
 import { Journal } from './components/Journal'
@@ -7,14 +7,19 @@ import { LaunchScreen } from './components/LaunchScreen'
 import { Logo } from './components/Logo'
 import { MoodComposer } from './components/MoodComposer'
 import { PulseFeed } from './components/PulseFeed'
+import { MapPlayback } from './components/MapPlayback'
+import { MiniPulse } from './components/MiniPulse'
+import { MoodCircles } from './components/MoodCircles'
+import { SocialInsights } from './components/SocialInsights'
+import { WorldQuestionCard } from './components/WorldQuestionCard'
 import { Settings } from './components/Settings'
 import { WorldMap } from './components/WorldMap'
 import { countryName } from './lib/geo'
 import { copy, emotionMeta, scoreLabel } from './i18n'
-import { createShareCard } from './lib/share'
-import { fetchLiveMoods, hasLiveBackend, LiveRateLimitError, reactToMood, submitLiveMood } from './lib/supabase'
-import { getActorHash, hasOnboarded, markReacted, readJournal, readReactedIds, readTheme, saveJournal, saveTheme, setOnboarded } from './lib/storage'
-import type { EmotionKey, MoodEntry, MoodPoint, MoodSummary, SubmitResult, ThemeMode, TimeRange, ViewKey } from './lib/types'
+import { createRecapCard, createShareCard, weeklyRecap, yearRecap } from './lib/share'
+import { fetchActiveEvents, fetchLiveMoods, fetchWorldQuestion, hasLiveBackend, LiveRateLimitError, reactToMood, reportMood, submitLiveMood, voteWorldQuestion } from './lib/supabase'
+import { getActorHash, hasOnboarded, markReacted, markReported, readDailyReminder, readJournal, readNotifiedDate, readReactedIds, readReportedIds, readTheme, saveDailyReminder, saveJournal, saveNotifiedDate, saveTheme, setOnboarded } from './lib/storage'
+import type { EmotionKey, MoodEntry, MoodEvent, MoodMoment, MoodPoint, MoodSummary, MoodWave, SubmitResult, ThemeMode, TimeRange, ViewKey, WorldQuestion } from './lib/types'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -31,7 +36,7 @@ const RANGE_MS: Record<TimeRange, number> = {
 }
 
 function sinceForFeed(range: TimeRange) {
-  return new Date(Date.now() - RANGE_MS[range] * 2).toISOString()
+  return new Date(Date.now() - Math.max(RANGE_MS[range] * 2, 24 * 3600000)).toISOString()
 }
 
 function dominantEmotion(entries: MoodEntry[]): EmotionKey {
@@ -84,6 +89,65 @@ function relativeTime(iso?: string) {
   return `${Math.round(hours / 24)}d ago`
 }
 
+function localDateKey(value: Date | string) {
+  const date = typeof value === 'string' ? new Date(value) : value
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+}
+
+function deriveMoodWaves(entries: MoodEntry[]): MoodWave[] {
+  const now = Date.now()
+  const currentStart = now - 60 * 60 * 1000
+  const previousStart = now - 2 * 60 * 60 * 1000
+  const buckets = new Map<string, { current: MoodEntry[]; previous: MoodEntry[] }>()
+  entries.forEach((entry) => {
+    if (entry.lat == null || entry.lng == null) return
+    const time = new Date(entry.createdAt).getTime()
+    if (time < previousStart) return
+    const key = pointId(entry.lat, entry.lng)
+    const bucket = buckets.get(key) || { current: [], previous: [] }
+    if (time >= currentStart) bucket.current.push(entry)
+    else bucket.previous.push(entry)
+    buckets.set(key, bucket)
+  })
+  return [...buckets.entries()].flatMap(([id, bucket]) => {
+    if (bucket.current.length < 2 || bucket.previous.length < 2) return []
+    const currentScore = bucket.current.reduce((s,e)=>s+e.score,0)/bucket.current.length
+    const previousScore = bucket.previous.reduce((s,e)=>s+e.score,0)/bucket.previous.length
+    const delta = currentScore - previousScore
+    if (Math.abs(delta) < 1) return []
+    const code = bucket.current.find(e=>e.countryCode)?.countryCode
+    return [{ pointId:id, label:countryName(code)||'Anonymous area', currentScore, previousScore, delta, activity:bucket.current.length, emotion:dominantEmotion(bucket.current) }]
+  }).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)).slice(0,4)
+}
+
+function deriveMoments(entries: MoodEntry[], previous: MoodEntry[]): MoodMoment[] {
+  if (entries.length < 5) return []
+  const moments: MoodMoment[] = []
+  const dominant = dominantEmotion(entries)
+  const dominantCount = entries.filter(e=>e.emotion===dominant).length
+  if (dominantCount >= 3) moments.push({ id:'dominant', emoji:emotionMeta[dominant].emoji, title:`${emotionMeta[dominant].name} is leading`, body:`${dominantCount} of ${entries.length} recent real pulses are ${emotionMeta[dominant].name.toLowerCase()}.` })
+  if (previous.length >= 3) {
+    const nowScore = entries.reduce((s,e)=>s+e.score,0)/entries.length
+    const prevScore = previous.reduce((s,e)=>s+e.score,0)/previous.length
+    const delta = nowScore-prevScore
+    if (Math.abs(delta)>=.4) moments.push({ id:'shift', emoji:delta>0?'↗️':'↘️', title:delta>0?'The pulse is lifting':'The pulse is softening', body:`The current real mood average is ${Math.abs(delta).toFixed(1)} points ${delta>0?'higher':'lower'} than the previous period.` })
+  }
+  const reasonCounts = new Map<string,number>()
+  entries.forEach(e=>{ if(e.reason) reasonCounts.set(e.reason,(reasonCounts.get(e.reason)||0)+1) })
+  const topReason=[...reasonCounts.entries()].sort((a,b)=>b[1]-a[1])[0]
+  if(topReason && topReason[1]>=3) moments.push({id:'reason',emoji:'✨',title:`${topReason[0][0].toUpperCase()+topReason[0].slice(1)} is shaping the room`,body:`${topReason[1]} recent real pulses tagged ${topReason[0]} as part of what they are feeling.`})
+  return moments.slice(0,3)
+}
+
+async function shareBlob(blob: Blob | null, title: string, text: string, filename: string) {
+  try {
+    const file = blob ? new File([blob], filename, { type:'image/png' }) : null
+    if (file && navigator.canShare?.({ files:[file] })) await navigator.share({ title, text, files:[file] })
+    else if (navigator.share) await navigator.share({ title, text, url:window.location.href })
+    else await navigator.clipboard.writeText(`${text} ${window.location.href}`)
+  } catch { /* dismissed */ }
+}
+
 export default function App() {
   const [theme, setThemeState] = useState<ThemeMode>(() => readTheme())
   const [view, setView] = useState<ViewKey>('home')
@@ -102,6 +166,15 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(window.matchMedia('(display-mode: standalone)').matches)
   const [reactedIds, setReactedIds] = useState<Set<string>>(() => readReactedIds())
+  const [reportedIds, setReportedIds] = useState<Set<string>>(() => readReportedIds())
+  const [worldQuestion, setWorldQuestion] = useState<WorldQuestion | null>(null)
+  const [questionChoice, setQuestionChoice] = useState<number | null>(null)
+  const [events, setEvents] = useState<MoodEvent[]>([])
+  const [reminderEnabled, setReminderEnabled] = useState(() => readDailyReminder())
+  const [playbackProgress, setPlaybackProgress] = useState<number | null>(null)
+  const [playbackPlaying, setPlaybackPlaying] = useState(false)
+  const [miniMode] = useState(() => new URL(window.location.href).searchParams.get('mini') === '1')
+  const [circleCode] = useState(() => new URL(window.location.href).searchParams.get('circle') || '')
 
   useEffect(() => {
     const apply = () => {
@@ -186,6 +259,45 @@ export default function App() {
     }
   }, [refreshNetwork])
 
+  useEffect(() => {
+    if (!backendHealthy) return
+    let cancelled = false
+    void Promise.all([fetchWorldQuestion(), fetchActiveEvents()]).then(([question, nextEvents]) => {
+      if (cancelled) return
+      setWorldQuestion(question)
+      setEvents(nextEvents)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [backendHealthy])
+
+  useEffect(() => {
+    if (!playbackPlaying) return
+    if (playbackProgress == null) setPlaybackProgress(0)
+    const timer = window.setInterval(() => {
+      setPlaybackProgress((current) => {
+        const next = Math.min(100, (current ?? 0) + 2.5)
+        if (next >= 100) setPlaybackPlaying(false)
+        return next
+      })
+    }, 700)
+    return () => window.clearInterval(timer)
+  }, [playbackPlaying, playbackProgress])
+
+  useEffect(() => {
+    if (!reminderEnabled || !installed || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const today = localDateKey(new Date())
+    if (journal.some((entry) => localDateKey(entry.createdAt) === today) || readNotifiedDate() === today) return
+    const timer = window.setTimeout(async () => {
+      try {
+        const registration = await navigator.serviceWorker?.ready
+        if (registration) await registration.showNotification('Moodaro Daily Pulse', { body: 'How are you feeling today? Add one quick pulse and see how the world feels.', icon: `${import.meta.env.BASE_URL}icons/icon-192.png`, badge: `${import.meta.env.BASE_URL}icons/icon-192.png`, tag: 'moodaro-daily-pulse' })
+        else new Notification('Moodaro Daily Pulse', { body: 'How are you feeling today?' })
+        saveNotifiedDate(today)
+      } catch { /* notification support varies by browser */ }
+    }, 2500)
+    return () => window.clearTimeout(timer)
+  }, [reminderEnabled, installed, journal])
+
   const { currentEntries, previousEntries } = useMemo(() => {
     const boundary = Date.now() - RANGE_MS[range]
     return {
@@ -195,6 +307,18 @@ export default function App() {
   }, [feedEntries, range])
 
   const points = useMemo(() => aggregatePoints(currentEntries), [currentEntries])
+
+  const mapEntries = useMemo(() => {
+    if (playbackProgress == null) return currentEntries
+    const end = Date.now()
+    const start = end - 24 * 3600000
+    const cutoff = start + (24 * 3600000 * playbackProgress / 100)
+    return feedEntries.filter((entry) => {
+      const time = new Date(entry.createdAt).getTime()
+      return time >= start && time <= cutoff
+    })
+  }, [currentEntries, feedEntries, playbackProgress])
+  const mapPoints = useMemo(() => aggregatePoints(mapEntries), [mapEntries])
 
   useEffect(() => {
     if (!lastSharedBucket) return
@@ -207,6 +331,14 @@ export default function App() {
 
   useEffect(() => {
     if (selectedPoint && !points.some((point) => point.id === selectedPoint.id)) setSelectedPoint(null)
+  }, [points, selectedPoint])
+
+  useEffect(() => {
+    if (!points.length || selectedPoint) return
+    const area = new URL(window.location.href).searchParams.get('area')
+    if (!area) return
+    const point = points.find((item) => item.id === area)
+    if (point) setSelectedPoint(point)
   }, [points, selectedPoint])
 
   const summary = useMemo<MoodSummary | null>(() => {
@@ -236,6 +368,21 @@ export default function App() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
   }, [currentEntries])
+
+
+  const todayCheckedIn = useMemo(() => {
+    const today = localDateKey(new Date())
+    return journal.some((entry) => localDateKey(entry.createdAt) === today)
+  }, [journal])
+
+  const latestMappedJournal = useMemo(() => journal.find((entry) => entry.lat != null && entry.lng != null), [journal])
+  const nearbyPoint = useMemo(() => {
+    if (latestMappedJournal?.lat == null || latestMappedJournal.lng == null) return null
+    return points.find((point) => point.id === pointId(latestMappedJournal.lat as number, latestMappedJournal.lng as number)) || null
+  }, [latestMappedJournal, points])
+  const moodWaves = useMemo(() => deriveMoodWaves(feedEntries), [feedEntries])
+  const moodMoments = useMemo(() => deriveMoments(currentEntries, previousEntries), [currentEntries, previousEntries])
+  const liveNowCount = useMemo(() => currentEntries.filter((entry) => Date.now() - new Date(entry.createdAt).getTime() <= 15 * 60000).length, [currentEntries])
 
   const setTheme = (value: ThemeMode) => {
     setThemeState(value)
@@ -268,11 +415,25 @@ export default function App() {
       }
 
       setFeedEntries((current) => [liveEntry, ...current.filter((item) => item.id !== liveEntry.id)])
-      if (liveEntry.lat != null && liveEntry.lng != null) setLastSharedBucket(pointId(liveEntry.lat, liveEntry.lng))
+      let reveal: SubmitResult['reveal']
+      if (liveEntry.lat != null && liveEntry.lng != null) {
+        const bucketId = pointId(liveEntry.lat, liveEntry.lng)
+        setLastSharedBucket(bucketId)
+        const nearby = [liveEntry, ...feedEntries].filter((item) => item.lat != null && item.lng != null && pointId(item.lat, item.lng) === bucketId && Date.now() - new Date(item.createdAt).getTime() <= 24 * 3600000)
+        const average = nearby.reduce((sum, item) => sum + item.score, 0) / Math.max(1, nearby.length)
+        const below = nearby.filter((item) => item.id !== liveEntry.id && item.score < liveEntry.score).length
+        reveal = {
+          label: countryName(liveEntry.countryCode) || 'Your approximate area',
+          score: Number(average.toFixed(1)),
+          count: nearby.length,
+          percentile: nearby.length >= 5 ? Math.round((below / Math.max(1, nearby.length - 1)) * 100) : undefined,
+          emotion: dominantEmotion(nearby)
+        }
+      }
       setBackendError(false)
       setBackendHealthy(true)
       window.setTimeout(() => void refreshNetwork(true), 350)
-      return { shared: true }
+      return { shared: true, reveal }
     } catch (error) {
       if (error instanceof LiveRateLimitError) return { shared: false, reason: 'rate-limit' }
       setBackendError(true)
@@ -293,6 +454,64 @@ export default function App() {
       setBackendError(true)
       setBackendHealthy(false)
     }
+  }
+
+  const report = async (entry: MoodEntry) => {
+    if (reportedIds.has(entry.id)) return
+    try {
+      const actorHash = await getActorHash()
+      await reportMood(entry.id, actorHash)
+      markReported(entry.id)
+      setReportedIds((current) => new Set([...current, entry.id]))
+    } catch { /* reporting should never take the live network down */ }
+  }
+
+  const vote = async (choice: number) => {
+    if (!worldQuestion || !backendHealthy) return
+    try {
+      const actorHash = await getActorHash()
+      await voteWorldQuestion(worldQuestion.id, choice, actorHash)
+      setQuestionChoice(choice)
+      const refreshed = await fetchWorldQuestion()
+      if (refreshed) setWorldQuestion(refreshed)
+    } catch { /* keep the rest of Moodaro working */ }
+  }
+
+  const toggleReminder = async () => {
+    if (!reminderEnabled && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission().catch(() => 'denied' as NotificationPermission)
+      if (permission !== 'granted') return
+    }
+    const next = !reminderEnabled
+    setReminderEnabled(next)
+    saveDailyReminder(next)
+  }
+
+  const shareWeekly = async () => {
+    const recap = weeklyRecap(journal)
+    if (!recap) return
+    const emotion = recap.emotion as EmotionKey
+    const blob = await createRecapCard('Your week in feelings', recap.score, emotionMeta[emotion].name, [`${recap.count} private check-ins`, `${emotionMeta[emotion].emoji} Mostly ${emotionMeta[emotion].name.toLowerCase()}`, 'Your journal stays on this device'])
+    await shareBlob(blob, 'My Moodaro week', `My week in feelings: ${recap.score.toFixed(1)}/10 on Moodaro.`, 'moodaro-week.png')
+  }
+
+  const shareYear = async () => {
+    const recap = yearRecap(journal)
+    if (!recap) return
+    const emotion = recap.emotion as EmotionKey
+    const blob = await createRecapCard(`Moodaro ${new Date().getFullYear()}`, recap.score, emotionMeta[emotion].name, [`${recap.count} private check-ins`, `${recap.months} active month${recap.months === 1 ? '' : 's'}`, `${emotionMeta[emotion].emoji} Most common: ${emotionMeta[emotion].name}`, 'Created privately on your device'])
+    await shareBlob(blob, 'My Moodaro year', `My Moodaro year so far: ${recap.score.toFixed(1)}/10.`, 'moodaro-year.png')
+  }
+
+  const shareSelectedArea = async () => {
+    if (!selectedPoint) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('area', selectedPoint.id)
+    const text = `${selectedPoint.label} is ${selectedPoint.score.toFixed(1)}/10 on Moodaro, based on ${selectedPoint.activity} real check-in${selectedPoint.activity === 1 ? '' : 's'}.`
+    try {
+      if (navigator.share) await navigator.share({ title: `${selectedPoint.label} · Moodaro`, text, url:url.toString() })
+      else await navigator.clipboard.writeText(`${text} ${url.toString()}`)
+    } catch { /* dismissed */ }
   }
 
   const install = async () => {
@@ -347,6 +566,10 @@ export default function App() {
         ? copy.unavailable
         : copy.disconnected
 
+  if (miniMode) {
+    return <MiniPulse summary={summary} onCheckIn={() => { const url = new URL(window.location.href); url.searchParams.delete('mini'); url.searchParams.set('compose','1'); window.location.href = url.toString() }} onOpen={() => { const url = new URL(window.location.href); url.searchParams.delete('mini'); window.location.href = url.toString() }} />
+  }
+
   return (
     <div className="app-shell">
       <LaunchScreen />
@@ -387,7 +610,7 @@ export default function App() {
           <section className="home-page">
             <div className="home-hero-grid">
               <div className="hero-copy">
-                <div className="hero-live-line"><span className={`live-dot ${liveState !== 'live' ? 'is-muted' : ''}`} /><span>{liveState === 'live' ? 'The live network is listening' : liveLabel}</span></div>
+                <div className="hero-live-line"><span className={`live-dot ${liveState !== 'live' ? 'is-muted' : ''}`} /><span>{liveState === 'live' ? (liveNowCount ? `${liveNowCount} real pulse${liveNowCount === 1 ? '' : 's'} in the last 15 minutes` : 'The live network is listening') : liveLabel}</span></div>
                 <span className="eyebrow">{copy.heroEyebrow}</span>
                 <h1 className="moodaro-hero-title"><span>Real People.</span><span>Real Feelings.</span><span className="hero-gradient-text">A Brighter Tomorrow.</span></h1>
                 <p>{copy.heroSubtitle}</p>
@@ -419,7 +642,7 @@ export default function App() {
 
               <div className="map-column">
                 <div className="map-stage">
-                  <WorldMap points={points} selectedId={selectedPoint?.id} onSelect={setSelectedPoint} />
+                  <WorldMap points={mapPoints} selectedId={selectedPoint?.id} onSelect={setSelectedPoint} />
 
                   <div className={`map-live-chip is-${liveState}`}><span className="live-dot" />{liveLabel}</div>
 
@@ -445,7 +668,7 @@ export default function App() {
                         <b>{emotionMeta[selectedPoint.emotion].name} · {selectedPoint.score.toFixed(1)}/10</b>
                         <small>{selectedPoint.detail} · {selectedPoint.activity} check-in{selectedPoint.activity === 1 ? '' : 's'}</small>
                       </div>
-                      <button onClick={() => setSelectedPoint(null)} aria-label="Close selected area">×</button>
+                      <div className="selected-area-actions"><button onClick={shareSelectedArea} aria-label="Share this area"><Link2 size={14} /></button><button onClick={() => setSelectedPoint(null)} aria-label="Close selected area">×</button></div>
                     </div>
                   )}
 
@@ -457,6 +680,7 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+                <MapPlayback progress={playbackProgress} playing={playbackPlaying} onChange={(value) => { setPlaybackProgress(value); setPlaybackPlaying(false) }} onToggle={() => { if (playbackProgress == null || playbackProgress >= 100) setPlaybackProgress(0); setPlaybackPlaying((value) => !value) }} onReset={() => { setPlaybackPlaying(false); setPlaybackProgress(null) }} />
                 <div className="map-legend" aria-label="Mood marker color legend">
                   <span className="legend-title">Mood color</span>
                   <span><i className="legend-swatch is-great" />Great 8+</span>
@@ -482,6 +706,14 @@ export default function App() {
               <div><span>{copy.resonances}</span><strong>{summary ? summary.resonances.toLocaleString() : '0'}</strong></div>
             </div>
 
+            <section className={`daily-pulse-card ${todayCheckedIn ? 'is-done' : ''}`}>
+              <div><span className="eyebrow">DAILY PULSE</span><h2>{todayCheckedIn ? 'Your pulse is in for today.' : 'How are you feeling today?'}</h2><p>{todayCheckedIn ? 'Come back later to see how your area and the world move around your check-in.' : 'One quick check-in unlocks your personal daily rhythm and helps the real map become more useful.'}</p></div>
+              <button className={todayCheckedIn ? 'secondary-button' : 'primary-button'} onClick={() => { setComposerPreset(null); setComposerOpen(true) }}>{todayCheckedIn ? 'Add another pulse' : 'Check in now'}<ArrowUpRight size={17} /></button>
+            </section>
+
+            <SocialInsights nearby={nearbyPoint} waves={moodWaves} moments={moodMoments} events={events} />
+            <div className="social-duo-grid"><WorldQuestionCard question={worldQuestion} selected={questionChoice} onVote={vote} /><MoodCircles live={backendHealthy} initialCode={circleCode} /></div>
+
             {summary && (
               <div className="world-pulse-card">
                 <div className="world-pulse-copy">
@@ -505,18 +737,18 @@ export default function App() {
               </div>
             )}
 
-            <PulseFeed entries={currentEntries} reactedIds={reactedIds} onReact={react} compact />
+            <PulseFeed entries={currentEntries} reactedIds={reactedIds} reportedIds={reportedIds} onReact={react} onReport={report} compact />
           </section>
         )}
 
-        {view === 'explore' && <Explore points={points} entries={currentEntries} reactedIds={reactedIds} onReact={react} />}
-        {view === 'journal' && <Journal entries={journal} onCheckIn={() => { setComposerPreset(null); setComposerOpen(true) }} />}
-        {view === 'settings' && <Settings theme={theme} setTheme={setTheme} canInstall={Boolean(deferredPrompt)} installed={installed} onInstall={install} onClear={clearJournal} liveConnected={liveState === 'live'} />}
+        {view === 'explore' && <Explore points={points} entries={currentEntries} events={events} reactedIds={reactedIds} reportedIds={reportedIds} onReact={react} onReport={report} />}
+        {view === 'journal' && <Journal entries={journal} onCheckIn={() => { setComposerPreset(null); setComposerOpen(true) }} onShareWeekly={shareWeekly} onShareYear={shareYear} />}
+        {view === 'settings' && <Settings theme={theme} setTheme={setTheme} canInstall={Boolean(deferredPrompt)} installed={installed} onInstall={install} onClear={clearJournal} liveConnected={liveState === 'live'} reminderEnabled={reminderEnabled} onToggleReminder={toggleReminder} onOpenMini={() => { const url = new URL(window.location.href); url.searchParams.set('mini','1'); window.location.href = url.toString() }} />}
       </main>
 
       <button className="mobile-pulse-fab" onClick={() => { setComposerPreset(null); setComposerOpen(true) }} aria-label="Share your mood"><span>+</span></button>
       <BottomNav view={view} onChange={setView} />
-      <MoodComposer open={composerOpen} initialEmotion={composerPreset} liveSharing={liveState === 'live'} onClose={() => setComposerOpen(false)} onSubmit={submitMood} />
+      <MoodComposer open={composerOpen} initialEmotion={composerPreset} liveSharing={liveState === 'live'} events={events} onClose={() => setComposerOpen(false)} onSubmit={submitMood} />
 
       {showOnboarding && (
         <div className="onboarding-backdrop">

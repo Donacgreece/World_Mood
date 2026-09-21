@@ -1,38 +1,32 @@
-# Moodaro v0.0.3
+# Moodaro v0.0.4
 
-**Feel the world together.**
+Moodaro is a privacy-first live social mood network built from real anonymous pulses.
 
-Moodaro is a playful, privacy-first social mood map. It keeps the real-data-only backend and anonymous check-in model from the previous World Mood builds, but replaces the entire visual identity with the new Moodaro brand.
+## v0.0.4
 
-## v0.0.3 highlights
+This release keeps the existing v0.0.3 live map and Supabase data, then adds viral/social loops without fabricated activity:
 
-- Full Moodaro rebrand across UI, PWA, favicon, app icon, splash screens and social artwork
-- New emotive location-pin mascot logo
-- Playful consumer-social visual system with violet, blue, cyan and pink gradients
-- New desktop top navigation and redesigned home hero
-- Quick mood entry strip on the home screen
-- Existing live Supabase check-ins, reactions, journal and real-data-only map retained
-- Emoji-led map pins and clearer selected-area mood feedback
-- 30x desktop zoom, pinch zoom on mobile and high-detail 50m world geometry
-- English-only UI
-- Light, dark and system appearance modes
-- Responsive layouts for mobile, tablet, desktop and ultrawide
-- PWA installation and updated iOS splash artwork
-- GitHub Pages deployment through Actions
+- Daily Pulse habit loop and post-check-in area reveal
+- Optional anonymous 120-character public micro-posts
+- “I feel this too” resonance feed plus community reporting
+- Mood Rooms for shared situations
+- Private Mood Circles with share links and aggregate-only results
+- Ask the World anonymous poll
+- Nearby Pulse from the user's latest coarse map area
+- Real-data Mood Waves and Moodaro Moments with sample thresholds
+- 24-hour map playback
+- Shareable approximate area deep links
+- Place-vs-place comparison
+- Live-event backend support, displayed only when real active events exist
+- Weekly recap and Moodaro Year cards generated locally
+- Daily reminder preference and Moodaro Mini compact PWA view
+- PWA shortcuts for check-in and Moodaro Mini
+- Existing light/dark themes, PWA, splash, map zoom, journal and real Supabase network retained
+
+## Privacy
+
+Private journal notes remain local on the device. Public micro-posts are optional, anonymous, limited to 120 characters and reject links/email addresses. Exact GPS is not stored. Mood Circles expose group aggregates only.
 
 ## Backend
 
-The project continues to use the existing Supabase backend configured through GitHub Actions variables/secrets:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-No simulated public activity is generated. Empty map regions remain empty until real users submit moods.
-
-## Deploy
-
-Run `push-moodaro.ps1` from PowerShell. It clones `Donacgreece/World_Mood`, mirrors this complete build, pushes `main`, and watches the GitHub Pages workflow.
-
-Current GitHub Pages URL: `https://donacgreece.github.io/World_Mood/`
-
-The future public brand domain is intended to be `Moodaro.com` once purchased and connected.
+The v0.0.4 migration is additive. Existing v0.0.3 RPCs are kept for backward compatibility. See `supabase/migrations/004_social_loops.sql`.

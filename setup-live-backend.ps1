@@ -9,7 +9,7 @@ $Source = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Schema = Join-Path $Source "supabase\schema.sql"
 
 Write-Host ""
-Write-Host "Moodaro v0.0.3 live backend setup" -ForegroundColor Cyan
+Write-Host "Moodaro v0.0.4 live backend setup" -ForegroundColor Cyan
 Write-Host "Real shared data through Supabase" -ForegroundColor DarkGray
 Write-Host ""
 

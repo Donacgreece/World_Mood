@@ -5,6 +5,10 @@ const JOURNAL_KEY = 'worldmood-journal-v2'
 const ONBOARD_KEY = 'worldmood-onboarded-v2'
 const DEVICE_KEY = 'worldmood-device-id'
 const REACTED_KEY = 'worldmood-reacted'
+const REPORTED_KEY = 'moodaro-reported'
+const REMINDER_KEY = 'moodaro-daily-reminder'
+const NOTIFIED_DATE_KEY = 'moodaro-notified-date'
+const CIRCLE_KEY = 'moodaro-circle-code'
 
 export function readTheme(): ThemeMode {
   const value = localStorage.getItem(THEME_KEY)
@@ -25,7 +29,7 @@ export function readJournal(): MoodEntry[] {
 }
 
 export function saveJournal(entries: MoodEntry[]) {
-  localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries.slice(0, 365)))
+  localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries.slice(0, 730)))
 }
 
 export function hasOnboarded() {
@@ -57,17 +61,33 @@ export async function getActorHash() {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export function readReactedIds() {
+function readIdSet(key: string) {
   try {
-    const value = JSON.parse(localStorage.getItem(REACTED_KEY) || '[]')
+    const value = JSON.parse(localStorage.getItem(key) || '[]')
     return new Set<string>(Array.isArray(value) ? value : [])
   } catch {
     return new Set<string>()
   }
 }
 
-export function markReacted(id: string) {
-  const set = readReactedIds()
+function markId(key: string, id: string) {
+  const set = readIdSet(key)
   set.add(id)
-  localStorage.setItem(REACTED_KEY, JSON.stringify([...set].slice(-500)))
+  localStorage.setItem(key, JSON.stringify([...set].slice(-750)))
+}
+
+export function readReactedIds() { return readIdSet(REACTED_KEY) }
+export function markReacted(id: string) { markId(REACTED_KEY, id) }
+export function readReportedIds() { return readIdSet(REPORTED_KEY) }
+export function markReported(id: string) { markId(REPORTED_KEY, id) }
+
+export function readDailyReminder() { return localStorage.getItem(REMINDER_KEY) === 'on' }
+export function saveDailyReminder(enabled: boolean) { localStorage.setItem(REMINDER_KEY, enabled ? 'on' : 'off') }
+export function readNotifiedDate() { return localStorage.getItem(NOTIFIED_DATE_KEY) || '' }
+export function saveNotifiedDate(date: string) { localStorage.setItem(NOTIFIED_DATE_KEY, date) }
+
+export function readLastCircleCode() { return localStorage.getItem(CIRCLE_KEY) || '' }
+export function saveLastCircleCode(code: string) {
+  if (code) localStorage.setItem(CIRCLE_KEY, code)
+  else localStorage.removeItem(CIRCLE_KEY)
 }

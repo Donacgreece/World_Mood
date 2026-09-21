@@ -6,8 +6,8 @@ $Source = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Work = Join-Path $env:TEMP "moodaro-deploy"
 
 Write-Host ""
-Write-Host "Moodaro v0.0.3 deployment" -ForegroundColor Magenta
-Write-Host "Full rebrand, playful social UI, live Supabase data, PWA and responsive map" -ForegroundColor DarkGray
+Write-Host "Moodaro v0.0.4 deployment" -ForegroundColor Magenta
+Write-Host "Daily Pulse, social loops, circles, questions, rooms, playback, recaps and live Supabase data" -ForegroundColor DarkGray
 Write-Host ""
 
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
@@ -59,7 +59,7 @@ Set-Location $Work
 git config core.autocrlf false
 Set-Location $Source
 
-Write-Host "Syncing the complete Moodaro v0.0.3 project..." -ForegroundColor Cyan
+Write-Host "Syncing the complete Moodaro v0.0.4 project..." -ForegroundColor Cyan
 $null = robocopy $Source $Work /MIR /XD .git node_modules dist /XF *.zip
 if ($LASTEXITCODE -gt 7) { throw "Robocopy failed with exit code $LASTEXITCODE" }
 
@@ -68,7 +68,7 @@ Set-Location $Work
 git add -A
 $changes = git status --porcelain
 if ($changes) {
-    git commit -m "Moodaro v0.0.3: full brand and social UI redesign"
+    git commit -m "Moodaro v0.0.4: viral social loops and community features"
     if ($LASTEXITCODE -ne 0) { throw "Git commit failed." }
     git push origin main
     if ($LASTEXITCODE -ne 0) { throw "Git push failed." }
@@ -112,7 +112,7 @@ $hasUrl = $vars | Where-Object { $_.name -eq 'VITE_SUPABASE_URL' }
 $hasKey = $secrets | Where-Object { $_.name -eq 'VITE_SUPABASE_ANON_KEY' }
 
 Write-Host ""
-Write-Host "Moodaro v0.0.3 deployment finished." -ForegroundColor Green
+Write-Host "Moodaro v0.0.4 deployment finished." -ForegroundColor Green
 Write-Host "Repository: https://github.com/$Repo"
 Write-Host "Site: https://donacgreece.github.io/World_Mood/"
 Write-Host ""

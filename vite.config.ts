@@ -41,6 +41,12 @@ export default defineConfig({
             short_name: 'Check in',
             url: '/World_Mood/?compose=1',
             icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }]
+          },
+          {
+            name: 'Moodaro Mini',
+            short_name: 'Mini pulse',
+            url: '/World_Mood/?mini=1',
+            icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }]
           }
         ]
       },

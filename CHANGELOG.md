@@ -1,50 +1,15 @@
 # Changelog
 
-## 0.0.3
-- Rebranded World Mood to Moodaro across the product.
-- Added new emotive location-pin mascot identity.
-- Rebuilt light and dark visual systems around violet, sky, cyan and pink.
-- Added new desktop top navigation.
-- Added playful home hero and quick mood strip.
-- Reworked map markers into emoji-led Moodaro pins.
-- Preserved real Supabase data, live submissions, reactions and journal behavior.
-- Preserved 30x desktop map zoom and mobile pinch interaction.
-- Added new PWA icons, favicon, social artwork and iOS splash screens.
-- Updated share-card branding.
-- Updated install and onboarding copy for Moodaro.
-
-
-## 0.0.3-responsivefix
-- Fixed hero headline overflow on mobile and desktop.
-- Removed width:max-content behavior from gradient headline line.
-- Added min-width:0 safeguards to hero grid children.
-- Tuned responsive headline sizes for small phones and tablets.
-- Improved quick mood card containment on very narrow widths.
-
-
-## 0.0.3-layoutfix
-- Fixed map zoom control overlap on desktop and mobile.
-- Repositioned zoom indicator below the control stack with consistent spacing.
-- Improved hero metric card layout on small screens to 2-up plus full-width last card.
-- Reduced cramped metric text on narrow mobile widths.
-
-
-## 0.0.3-homepolish
-- Balanced spacing between home hero elements on mobile and desktop.
-- Made the left home card match the map column height on desktop.
-- Kept the hero section visible in the first viewport more reliably on larger screens.
-- Reduced crowding in the quick mood widget and hero metric cards.
-
-
-## 0.0.3-uirefine
-- Added thinner app-colored scrollbars across desktop surfaces.
-- Rebuilt the in-app splash screen with inline Moodaro logo for reliable standalone launch branding.
-- Reduced map pin size and moved the pin tip to the exact map coordinate.
-- Adjusted selected marker readout placement for the new pin geometry.
-
-
-## 0.0.3-splashfix
-- Rebuilt all iOS native startup images with the real Moodaro pin mascot.
-- Removed the old incomplete square splash artwork.
-- Versioned iOS splash filenames to bypass aggressive iOS PWA startup-image caching.
-- Matched native iOS splash styling to the in-app Moodaro launch screen.
+## 0.0.4
+- Added Daily Pulse, area reveal and live-now counter.
+- Added anonymous public micro-posts with reporting and server-side link blocking.
+- Added Mood Rooms and live-event tagging infrastructure.
+- Added Ask the World polls backed by real votes.
+- Added private Mood Circles with aggregate-only shared links.
+- Added Nearby Pulse, real-data Mood Waves and Moodaro Moments.
+- Added 24-hour map playback and shareable area deep links.
+- Added place comparison.
+- Added weekly and yearly private recap share cards.
+- Added Moodaro Mini PWA shortcut and daily reminder preference.
+- Preserved existing v0.0.3 data and RPC compatibility.
+- No simulated mood activity was introduced.
