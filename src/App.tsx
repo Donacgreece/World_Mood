@@ -18,7 +18,7 @@ import { countryName } from './lib/geo'
 import { copy, emotionMeta, scoreLabel } from './i18n'
 import { createRecapCard, createShareCard, weeklyRecap, yearRecap } from './lib/share'
 import { fetchActiveEvents, fetchLiveMoods, fetchWorldQuestion, hasLiveBackend, LiveRateLimitError, reactToMood, reportMood, submitLiveMood, voteWorldQuestion } from './lib/supabase'
-import { getActorHash, hasOnboarded, markReacted, markReported, readDailyReminder, readJournal, readNotifiedDate, readReactedIds, readReportedIds, readTheme, saveDailyReminder, saveJournal, saveNotifiedDate, saveTheme, setOnboarded } from './lib/storage'
+import { getActorHash, hasOnboarded, markReacted, markReported, readDailyReminder, readDailyReminderTime, readJournal, readNotifiedDate, readReactedIds, readReportedIds, readTheme, saveDailyReminder, saveDailyReminderTime, saveJournal, saveNotifiedDate, saveTheme, setOnboarded } from './lib/storage'
 import type { EmotionKey, MoodEntry, MoodEvent, MoodMoment, MoodPoint, MoodSummary, MoodWave, SubmitResult, ThemeMode, TimeRange, ViewKey, WorldQuestion } from './lib/types'
 
 type BeforeInstallPromptEvent = Event & {
@@ -151,7 +151,7 @@ async function shareBlob(blob: Blob | null, title: string, text: string, filenam
 export default function App() {
   const [theme, setThemeState] = useState<ThemeMode>(() => readTheme())
   const [view, setView] = useState<ViewKey>('home')
-  const [range, setRange] = useState<TimeRange>('now')
+  const [range, setRange] = useState<TimeRange>('24h')
   const [journal, setJournal] = useState<MoodEntry[]>(() => readJournal())
   const [composerOpen, setComposerOpen] = useState(false)
   const [composerPreset, setComposerPreset] = useState<EmotionKey | null>(null)
@@ -171,6 +171,7 @@ export default function App() {
   const [questionChoice, setQuestionChoice] = useState<number | null>(null)
   const [events, setEvents] = useState<MoodEvent[]>([])
   const [reminderEnabled, setReminderEnabled] = useState(() => readDailyReminder())
+  const [reminderTime, setReminderTime] = useState(() => readDailyReminderTime())
   const [playbackProgress, setPlaybackProgress] = useState<number | null>(null)
   const [playbackPlaying, setPlaybackPlaying] = useState(false)
   const [miniMode] = useState(() => new URL(window.location.href).searchParams.get('mini') === '1')
@@ -286,16 +287,25 @@ export default function App() {
     if (!reminderEnabled || !installed || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const today = localDateKey(new Date())
     if (journal.some((entry) => localDateKey(entry.createdAt) === today) || readNotifiedDate() === today) return
+
+    const [hour, minute] = reminderTime.split(':').map(Number)
+    const now = new Date()
+    const scheduled = new Date(now)
+    scheduled.setHours(hour, minute, 0, 0)
+    const delay = Math.max(2500, scheduled.getTime() - now.getTime())
+
     const timer = window.setTimeout(async () => {
+      const currentToday = localDateKey(new Date())
+      if (journal.some((entry) => localDateKey(entry.createdAt) === currentToday) || readNotifiedDate() === currentToday) return
       try {
         const registration = await navigator.serviceWorker?.ready
         if (registration) await registration.showNotification('Moodaro Daily Pulse', { body: 'How are you feeling today? Add one quick pulse and see how the world feels.', icon: `${import.meta.env.BASE_URL}icons/icon-192.png`, badge: `${import.meta.env.BASE_URL}icons/icon-192.png`, tag: 'moodaro-daily-pulse' })
         else new Notification('Moodaro Daily Pulse', { body: 'How are you feeling today?' })
-        saveNotifiedDate(today)
+        saveNotifiedDate(currentToday)
       } catch { /* notification support varies by browser */ }
-    }, 2500)
+    }, delay)
     return () => window.clearTimeout(timer)
-  }, [reminderEnabled, installed, journal])
+  }, [reminderEnabled, reminderTime, installed, journal])
 
   const { currentEntries, previousEntries } = useMemo(() => {
     const boundary = Date.now() - RANGE_MS[range]
@@ -474,6 +484,11 @@ export default function App() {
       const refreshed = await fetchWorldQuestion()
       if (refreshed) setWorldQuestion(refreshed)
     } catch { /* keep the rest of Moodaro working */ }
+  }
+
+  const changeReminderTime = (value: string) => {
+    setReminderTime(value)
+    saveDailyReminderTime(value)
   }
 
   const toggleReminder = async () => {
@@ -742,7 +757,7 @@ export default function App() {
 
         {view === 'explore' && <Explore points={points} entries={currentEntries} events={events} reactedIds={reactedIds} reportedIds={reportedIds} onReact={react} onReport={report} />}
         {view === 'journal' && <Journal entries={journal} onCheckIn={() => { setComposerPreset(null); setComposerOpen(true) }} onShareWeekly={shareWeekly} onShareYear={shareYear} />}
-        {view === 'settings' && <Settings theme={theme} setTheme={setTheme} canInstall={Boolean(deferredPrompt)} installed={installed} onInstall={install} onClear={clearJournal} liveConnected={liveState === 'live'} reminderEnabled={reminderEnabled} onToggleReminder={toggleReminder} onOpenMini={() => { const url = new URL(window.location.href); url.searchParams.set('mini','1'); window.location.href = url.toString() }} />}
+        {view === 'settings' && <Settings theme={theme} setTheme={setTheme} canInstall={Boolean(deferredPrompt)} installed={installed} onInstall={install} onClear={clearJournal} liveConnected={liveState === 'live'} reminderEnabled={reminderEnabled} reminderTime={reminderTime} onReminderTimeChange={changeReminderTime} onToggleReminder={toggleReminder} onOpenMini={() => { const url = new URL(window.location.href); url.searchParams.set('mini','1'); window.location.href = url.toString() }} />}
       </main>
 
       <button className="mobile-pulse-fab" onClick={() => { setComposerPreset(null); setComposerOpen(true) }} aria-label="Share your mood"><span>+</span></button>

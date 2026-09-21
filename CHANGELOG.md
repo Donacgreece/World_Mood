@@ -39,3 +39,10 @@
 - Added the five versioned Supabase migration files that match the production migration history.
 - Fixed GitHub Supabase Preview failure: `Remote migration versions not found in local migrations directory`.
 - No production data or live RPC behavior changed.
+
+
+## 0.0.4-reminderfix
+- Renamed the 2-hour map range from Now to 2H for clarity.
+- Changed the default map range to 24H.
+- Added a locally saved time picker for Daily Pulse reminders.
+- Reminder scheduling now respects the selected local time and skips days with an existing check-in.

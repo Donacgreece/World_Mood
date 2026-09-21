@@ -2,7 +2,7 @@ import { Bell, DatabaseZap, Download, LayoutDashboard, ShieldCheck, Trash2 } fro
 import { copy } from '../i18n'
 import type { ThemeMode } from '../lib/types'
 
-export function Settings({ theme, setTheme, canInstall, installed, onInstall, onClear, liveConnected, reminderEnabled, onToggleReminder, onOpenMini }: {
+export function Settings({ theme, setTheme, canInstall, installed, onInstall, onClear, liveConnected, reminderEnabled, reminderTime, onReminderTimeChange, onToggleReminder, onOpenMini }: {
   theme: ThemeMode
   setTheme: (v: ThemeMode) => void
   canInstall: boolean
@@ -11,6 +11,8 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
   onClear: () => void
   liveConnected: boolean
   reminderEnabled: boolean
+  reminderTime: string
+  onReminderTimeChange: (value: string) => void
   onToggleReminder: () => void
   onOpenMini: () => void
 }) {
@@ -29,9 +31,15 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
           <button className="secondary-button" disabled={!canInstall || installed} onClick={onInstall}>{copy.installCta}</button>
         </div>
 
-        <div className="settings-card">
-          <div className="settings-label"><Bell /><div><strong>Daily Pulse reminder</strong><span>A gentle reminder when you open Moodaro on a day you have not checked in yet. Background push remains off until a dedicated push service is connected.</span></div></div>
-          <button className={`switch-control ${reminderEnabled?'is-on':''}`} role="switch" aria-checked={reminderEnabled} onClick={onToggleReminder}><i /></button>
+        <div className="settings-card reminder-settings-card">
+          <div className="settings-label"><Bell /><div><strong>Daily Pulse reminder</strong><span>Choose when Moodaro should remind you on days you have not checked in yet. The reminder works while the installed app is available; full background push will come with a dedicated push service.</span></div></div>
+          <div className="reminder-controls">
+            <label className={`reminder-time ${!reminderEnabled ? 'is-disabled' : ''}`}>
+              <span>Reminder time</span>
+              <input type="time" value={reminderTime} onChange={(event)=>onReminderTimeChange(event.target.value)} disabled={!reminderEnabled} aria-label="Daily Pulse reminder time" />
+            </label>
+            <button className={`switch-control ${reminderEnabled?'is-on':''}`} role="switch" aria-checked={reminderEnabled} onClick={onToggleReminder}><i /></button>
+          </div>
         </div>
 
         <div className="settings-card">

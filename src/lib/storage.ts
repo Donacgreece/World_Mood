@@ -8,6 +8,7 @@ const REACTED_KEY = 'worldmood-reacted'
 const REPORTED_KEY = 'moodaro-reported'
 const REMINDER_KEY = 'moodaro-daily-reminder'
 const NOTIFIED_DATE_KEY = 'moodaro-notified-date'
+const REMINDER_TIME_KEY = 'moodaro-daily-reminder-time'
 const CIRCLE_KEY = 'moodaro-circle-code'
 
 export function readTheme(): ThemeMode {
@@ -85,6 +86,13 @@ export function readDailyReminder() { return localStorage.getItem(REMINDER_KEY) 
 export function saveDailyReminder(enabled: boolean) { localStorage.setItem(REMINDER_KEY, enabled ? 'on' : 'off') }
 export function readNotifiedDate() { return localStorage.getItem(NOTIFIED_DATE_KEY) || '' }
 export function saveNotifiedDate(date: string) { localStorage.setItem(NOTIFIED_DATE_KEY, date) }
+export function readDailyReminderTime() {
+  const value = localStorage.getItem(REMINDER_TIME_KEY) || '20:00'
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : '20:00'
+}
+export function saveDailyReminderTime(value: string) {
+  if (/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) localStorage.setItem(REMINDER_TIME_KEY, value)
+}
 
 export function readLastCircleCode() { return localStorage.getItem(CIRCLE_KEY) || '' }
 export function saveLastCircleCode(code: string) {

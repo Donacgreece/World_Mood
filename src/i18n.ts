@@ -23,7 +23,7 @@ export const copy = {
   noLiveData: 'No pulses here yet.',
   noLiveDataBody: 'Be the first to put a real feeling on this part of the map.',
   backendRequired: 'Connect the live network to publish and receive real shared check-ins.',
-  now: 'Now',
+  now: '2H',
   h24: '24H',
   d7: '7D',
   d30: '30D',

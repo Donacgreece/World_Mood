@@ -357,6 +357,13 @@ body::before {
 .switch-control i { position:absolute; left:3px; top:3px; width:21px; height:21px; border-radius:50%; background:white; box-shadow:0 2px 7px rgba(0,0,0,.18); transition:transform .18s ease; }
 .switch-control.is-on { background:var(--brand); }
 .switch-control.is-on i { transform:translateX(18px); }
+
+.reminder-controls { display:flex; align-items:center; justify-content:flex-end; gap:14px; flex:0 0 auto; }
+.reminder-time { display:grid; gap:5px; min-width:138px; }
+.reminder-time > span { color:var(--muted); font-size:8px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+.reminder-time input { min-height:42px; padding:0 12px; border:1px solid var(--line); border-radius:13px; background:var(--surface-strong); color:var(--text); font:inherit; font-size:12px; font-weight:800; outline:none; color-scheme:light dark; }
+.reminder-time input:focus { border-color:color-mix(in srgb,var(--brand) 42%, var(--line)); box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 10%, transparent); }
+.reminder-time.is-disabled { opacity:.48; }
 .location-preview-button { grid-column:1/-1; justify-self:start; min-height:35px; padding:0 10px; border:1px solid var(--line); border-radius:11px; background:var(--surface-soft); display:inline-flex; align-items:center; gap:7px; color:var(--text); font-size:9px; font-weight:800; cursor:pointer; }
 .map-placement > small { grid-column:1/-1; color:var(--muted); font-size:8px; line-height:1.45; }
 .privacy-inline { margin-top:12px; display:flex; gap:9px; align-items:flex-start; color:var(--muted); font-size:8px; line-height:1.55; }
@@ -432,6 +439,8 @@ body::before {
   .emotion-ribbon { grid-template-columns:repeat(5,minmax(92px,1fr)); overflow-x:auto; padding-bottom:4px; }
   .pulse-feed { grid-template-columns:1fr; }
   .settings-card { align-items:flex-start; flex-direction:column; }
+  .reminder-controls { width:100%; justify-content:space-between; }
+  .reminder-time { flex:1 1 auto; min-width:0; max-width:190px; }
   .three-small { width:100%; min-width:0; }
 }
 
