@@ -20,3 +20,10 @@
 - Added min-width:0 safeguards to hero grid children.
 - Tuned responsive headline sizes for small phones and tablets.
 - Improved quick mood card containment on very narrow widths.
+
+
+## 0.0.3-layoutfix
+- Fixed map zoom control overlap on desktop and mobile.
+- Repositioned zoom indicator below the control stack with consistent spacing.
+- Improved hero metric card layout on small screens to 2-up plus full-width last card.
+- Reduced cramped metric text on narrow mobile widths.
