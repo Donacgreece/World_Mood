@@ -363,8 +363,8 @@ export function WorldMap({ points, selectedId, onSelect }: {
                 <circle className="point-aura moodaro-point-aura" r={radius * 2.25} />
                 <g className="moodaro-pin" style={{ '--pin-color': tone } as CSSProperties}>
                   <path className="moodaro-pin-body" d="M0,0 C0,0 -11,-7.5 -11,-17 C-11,-24.8 -6,-31 0,-31 C6,-31 11,-24.8 11,-17 C11,-7.5 0,0 0,0 Z" />
-                  <circle className="moodaro-pin-face" cx="0" cy="-17.5" r="7.4" />
-                  <text className="moodaro-pin-emoji" x="0" y="-14.2" textAnchor="middle">{emotion.emoji}</text>
+                  <circle className="moodaro-pin-face" cx="0" cy="-17.5" r="8.7" />
+                  <text className="moodaro-pin-emoji" x="0" y="-17.2" textAnchor="middle">{emotion.emoji}</text>
                 </g>
                 {active && (
                   <g className="point-readout moodaro-readout" transform="translate(14,-34)">

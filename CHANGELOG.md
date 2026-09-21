@@ -65,3 +65,10 @@
 - Standardized button height, width, gaps and label alignment.
 - Centered the standalone Other reason in the final row.
 - Equalized both context panel heights for a balanced composer layout.
+
+
+## 0.0.4-pinclarity
+- Enlarged the white face area inside map pins without enlarging the overall pin footprint.
+- Increased emoji size and centered it correctly inside the pin face.
+- Reduced pin glow for better legibility when markers are close together.
+- Added explicit color-emoji font fallbacks for more consistent rendering across iOS, Windows and Android.

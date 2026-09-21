@@ -1231,12 +1231,12 @@ body::after {
 .map-glow-a { background:#49d4f1; }
 .map-glow-b { background:#e95fbb; }
 .map-glow { opacity:.11; }
-.moodaro-pin { cursor:pointer; transition:transform .18s ease; filter:drop-shadow(0 5px 7px color-mix(in srgb,var(--pin-color) 22%, transparent)); }
+.moodaro-pin { cursor:pointer; transition:transform .18s ease; filter:drop-shadow(0 4px 6px color-mix(in srgb,var(--pin-color) 16%, transparent)); }
 .moodaro-pin-body { fill:var(--pin-color); stroke:rgba(255,255,255,.96); stroke-width:1.45; }
-.moodaro-pin-face { fill:rgba(255,255,255,.96); stroke:rgba(255,255,255,.90); stroke-width:.65; }
-.moodaro-pin-emoji { font-size:8.4px; dominant-baseline:middle; pointer-events:none; }
-.mood-point:hover .moodaro-pin,.mood-point.is-active .moodaro-pin { transform:scale(1.11); }
-.moodaro-point-aura { opacity:.08; fill:var(--point-color); }
+.moodaro-pin-face { fill:#fff; stroke:rgba(22,28,55,.10); stroke-width:.8; }
+.moodaro-pin-emoji { font-size:10.4px; dominant-baseline:middle; pointer-events:none; font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
+.mood-point:hover .moodaro-pin,.mood-point.is-active .moodaro-pin { transform:scale(1.14); }
+.moodaro-point-aura { opacity:.045; fill:var(--point-color); }
 .moodaro-readout rect { fill:color-mix(in srgb,var(--surface-strong) 96%, transparent); stroke:var(--line-strong); }
 .moodaro-readout text { fill:var(--text); font-size:8.5px; font-weight:850; }
 
