@@ -90,6 +90,7 @@ export default function App() {
   const [range, setRange] = useState<TimeRange>('now')
   const [journal, setJournal] = useState<MoodEntry[]>(() => readJournal())
   const [composerOpen, setComposerOpen] = useState(false)
+  const [composerPreset, setComposerPreset] = useState<EmotionKey | null>(null)
   const [selectedPoint, setSelectedPoint] = useState<MoodPoint | null>(null)
   const [lastSharedBucket, setLastSharedBucket] = useState<string | null>(null)
   const [feedEntries, setFeedEntries] = useState<MoodEntry[]>([])
@@ -116,7 +117,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.lang = 'en'
-    document.title = 'World Mood · The world, right now'
+    document.title = 'Moodaro · Feel the world together'
   }, [])
 
   useEffect(() => {
@@ -304,13 +305,13 @@ export default function App() {
   const share = async () => {
     if (!summary) return
     const blob = await createShareCard(summary)
-    const text = `World Mood is ${summary.score}/10 right now, based on ${summary.responses.toLocaleString()} real anonymous check-ins.`
+    const text = `Moodaro is ${summary.score}/10 right now, based on ${summary.responses.toLocaleString()} real anonymous check-ins.`
     try {
-      const file = blob ? new File([blob], 'world-mood.png', { type: 'image/png' }) : null
+      const file = blob ? new File([blob], 'moodaro-pulse.png', { type: 'image/png' }) : null
       if (file && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: 'World Mood', text, files: [file] })
+        await navigator.share({ title: 'Moodaro', text, files: [file] })
       } else if (navigator.share) {
-        await navigator.share({ title: 'World Mood', text, url: window.location.href })
+        await navigator.share({ title: 'Moodaro', text, url: window.location.href })
       } else {
         await navigator.clipboard.writeText(`${text} ${window.location.href}`)
       }
@@ -365,6 +366,12 @@ export default function App() {
       <main className="main-area">
         <header className="topbar">
           <Logo onClick={() => { setView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
+          <nav className="desktop-top-nav" aria-label="Desktop navigation">
+            <button className={view === 'home' ? 'is-active' : ''} onClick={() => setView('home')}>Now</button>
+            <button className={view === 'explore' ? 'is-active' : ''} onClick={() => setView('explore')}>Explore</button>
+            <button className={view === 'journal' ? 'is-active' : ''} onClick={() => setView('journal')}>Journal</button>
+            <button className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')}>You</button>
+          </nav>
           <div className="top-actions">
             <button className={`network-pill is-${liveState}`} title={copy.realDataHint} onClick={() => void refreshNetwork(false)} aria-label={`${liveLabel}. Refresh live network`}>
               <span className="live-dot" />
@@ -382,10 +389,20 @@ export default function App() {
               <div className="hero-copy">
                 <div className="hero-live-line"><span className={`live-dot ${liveState !== 'live' ? 'is-muted' : ''}`} /><span>{liveState === 'live' ? 'The live network is listening' : liveLabel}</span></div>
                 <span className="eyebrow">{copy.heroEyebrow}</span>
-                <h1>{copy.heroTitle}</h1>
+                <h1 className="moodaro-hero-title"><span>Real People.</span><span>Real Feelings.</span><span className="hero-gradient-text">A Brighter Tomorrow.</span></h1>
                 <p>{copy.heroSubtitle}</p>
+                <div className="quick-mood-card" aria-label="Quick mood check-in">
+                  <div className="quick-mood-copy"><strong>How are you feeling?</strong><span>Share your mood in seconds</span></div>
+                  <div className="quick-mood-row">
+                    {(['great','good','calm','low','stressed'] as EmotionKey[]).map((emotion) => (
+                      <button key={emotion} onClick={() => { setComposerPreset(emotion); setComposerOpen(true) }} aria-label={`Share a ${emotionMeta[emotion].name} mood`}>
+                        <span>{emotionMeta[emotion].emoji}</span><small>{emotionMeta[emotion].name}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="hero-actions">
-                  <button className="primary-button" onClick={() => setComposerOpen(true)}>{copy.checkIn}<ArrowUpRight size={18} /></button>
+                  <button className="primary-button" onClick={() => { setComposerPreset(null); setComposerOpen(true) }}>{copy.checkIn}<ArrowUpRight size={18} /></button>
                   <button className="secondary-button" onClick={share} disabled={!summary}><Share2 size={18} />{copy.share}</button>
                 </div>
                 <div className="hero-trust-row">
@@ -408,7 +425,7 @@ export default function App() {
 
                   {summary ? (
                     <div className="global-score-card">
-                      <span>WORLD MOOD</span>
+                      <span>MOODARO</span>
                       <div><strong>{summary.score.toFixed(1)}</strong><small>/10</small></div>
                       <em>{summary.label}</em>
                     </div>
@@ -424,7 +441,7 @@ export default function App() {
                     <div className="selected-area-card">
                       <span>{emotionMeta[selectedPoint.emotion].emoji}</span>
                       <div>
-                        <strong>{selectedPoint.label}</strong>
+                        <strong>{emotionMeta[selectedPoint.emotion].emoji} {selectedPoint.label}</strong>
                         <b>{emotionMeta[selectedPoint.emotion].name} · {selectedPoint.score.toFixed(1)}/10</b>
                         <small>{selectedPoint.detail} · {selectedPoint.activity} check-in{selectedPoint.activity === 1 ? '' : 's'}</small>
                       </div>
@@ -468,7 +485,7 @@ export default function App() {
             {summary && (
               <div className="world-pulse-card">
                 <div className="world-pulse-copy">
-                  <span><Radio size={14} /> WORLD PULSE</span>
+                  <span><Radio size={14} /> MOODARO PULSE</span>
                   <strong>{summary.label}</strong>
                   <p>{summary.delta == null ? 'Collecting enough history to calculate a shift.' : `${summary.delta > 0 ? '+' : ''}${summary.delta.toFixed(1)} mood points versus the previous period.`}</p>
                 </div>
@@ -493,19 +510,19 @@ export default function App() {
         )}
 
         {view === 'explore' && <Explore points={points} entries={currentEntries} reactedIds={reactedIds} onReact={react} />}
-        {view === 'journal' && <Journal entries={journal} onCheckIn={() => setComposerOpen(true)} />}
+        {view === 'journal' && <Journal entries={journal} onCheckIn={() => { setComposerPreset(null); setComposerOpen(true) }} />}
         {view === 'settings' && <Settings theme={theme} setTheme={setTheme} canInstall={Boolean(deferredPrompt)} installed={installed} onInstall={install} onClear={clearJournal} liveConnected={liveState === 'live'} />}
       </main>
 
-      <button className="mobile-pulse-fab" onClick={() => setComposerOpen(true)} aria-label="Share your mood"><span>+</span></button>
+      <button className="mobile-pulse-fab" onClick={() => { setComposerPreset(null); setComposerOpen(true) }} aria-label="Share your mood"><span>+</span></button>
       <BottomNav view={view} onChange={setView} />
-      <MoodComposer open={composerOpen} liveSharing={liveState === 'live'} onClose={() => setComposerOpen(false)} onSubmit={submitMood} />
+      <MoodComposer open={composerOpen} initialEmotion={composerPreset} liveSharing={liveState === 'live'} onClose={() => setComposerOpen(false)} onSubmit={submitMood} />
 
       {showOnboarding && (
         <div className="onboarding-backdrop">
           <section className="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
             <img className="onboarding-logo" src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" />
-            <span className="eyebrow">WELCOME TO WORLD MOOD</span>
+            <span className="eyebrow">WELCOME TO MOODARO</span>
             <h2 id="onboarding-title">{copy.onboardTitle}</h2>
             <p>{copy.onboardBody}</p>
             <div className="onboarding-features">

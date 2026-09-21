@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent as ReactChangeEvent, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent as ReactChangeEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { Check, LocateFixed, MapPin, ShieldCheck, X } from 'lucide-react'
 import { copy, emotionMeta, reasonMeta } from '../i18n'
 import { countryForCoordinates } from '../lib/geo'
@@ -41,8 +41,9 @@ function requestApproximateLocation(): Promise<ApproximateLocation> {
   })
 }
 
-export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
+export function MoodComposer({ open, initialEmotion, liveSharing, onClose, onSubmit }: {
   open: boolean
+  initialEmotion?: EmotionKey | null
   liveSharing: boolean
   onClose: () => void
   onSubmit: (entry: MoodEntry) => Promise<SubmitResult>
@@ -61,6 +62,10 @@ export function MoodComposer({ open, liveSharing, onClose, onSubmit }: {
   const [message, setMessage] = useState<string | null>(null)
 
   const score = useMemo(() => scoreByEmotion[emotion][intensity - 1], [emotion, intensity])
+
+  useEffect(() => {
+    if (open && initialEmotion) setEmotion(initialEmotion)
+  }, [open, initialEmotion])
 
   if (!open) return null
 

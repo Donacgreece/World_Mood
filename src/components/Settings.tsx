@@ -60,7 +60,7 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
 
         <div className="about-card">
           <img src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" />
-          <div><strong>{copy.about}</strong><p>{copy.aboutText}</p><small>World Mood v0.0.2</small></div>
+          <div><strong>{copy.about}</strong><p>{copy.aboutText}</p><small>Moodaro v0.0.3</small></div>
         </div>
       </div>
     </section>

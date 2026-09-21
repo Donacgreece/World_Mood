@@ -1,4 +1,4 @@
-name: Deploy World Mood to GitHub Pages
+name: Deploy Moodaro to GitHub Pages
 
 on:
   push:

@@ -3,11 +3,11 @@ $ErrorActionPreference = "Stop"
 $Repo = "Donacgreece/World_Mood"
 $RepoUrl = "https://github.com/$Repo.git"
 $Source = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Work = Join-Path $env:TEMP "world-mood-deploy"
+$Work = Join-Path $env:TEMP "moodaro-deploy"
 
 Write-Host ""
-Write-Host "World Mood v0.0.2 deployment" -ForegroundColor Cyan
-Write-Host "Deep map zoom rebuild: 30x desktop zoom, natural pinch zoom and higher-detail world geometry" -ForegroundColor DarkGray
+Write-Host "Moodaro v0.0.3 deployment" -ForegroundColor Magenta
+Write-Host "Full rebrand, playful social UI, live Supabase data, PWA and responsive map" -ForegroundColor DarkGray
 Write-Host ""
 
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
@@ -26,11 +26,15 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     winget install --id GitHub.cli -e --source winget --accept-package-agreements --accept-source-agreements
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw "GitHub CLI is still not available in PATH. Open a new PowerShell window and run this script again."
+}
 
 & gh auth status *> $null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "GitHub login is required." -ForegroundColor Yellow
     & gh auth login --hostname github.com --git-protocol https --web
+    if ($LASTEXITCODE -ne 0) { throw "GitHub authentication failed." }
     & gh auth setup-git
 }
 
@@ -55,7 +59,7 @@ Set-Location $Work
 git config core.autocrlf false
 Set-Location $Source
 
-Write-Host "Syncing the complete v0.0.2 project..." -ForegroundColor Cyan
+Write-Host "Syncing the complete Moodaro v0.0.3 project..." -ForegroundColor Cyan
 $null = robocopy $Source $Work /MIR /XD .git node_modules dist /XF *.zip
 if ($LASTEXITCODE -gt 7) { throw "Robocopy failed with exit code $LASTEXITCODE" }
 
@@ -64,7 +68,8 @@ Set-Location $Work
 git add -A
 $changes = git status --porcelain
 if ($changes) {
-    git commit -m "World Mood v0.0.2: rebuild desktop and mobile map zoom"
+    git commit -m "Moodaro v0.0.3: full brand and social UI redesign"
+    if ($LASTEXITCODE -ne 0) { throw "Git commit failed." }
     git push origin main
     if ($LASTEXITCODE -ne 0) { throw "Git push failed." }
 } else {
@@ -79,7 +84,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $sha = (git rev-parse HEAD).Trim()
 $run = $null
-for ($i = 0; $i -lt 20 -and -not $run; $i++) {
+for ($i = 0; $i -lt 25 -and -not $run; $i++) {
     Start-Sleep -Seconds 2
     $runsJson = & gh run list --workflow="deploy.yml" --branch main --limit 10 --json databaseId,headSha,status,conclusion
     if ($LASTEXITCODE -eq 0 -and $runsJson) {
@@ -107,14 +112,14 @@ $hasUrl = $vars | Where-Object { $_.name -eq 'VITE_SUPABASE_URL' }
 $hasKey = $secrets | Where-Object { $_.name -eq 'VITE_SUPABASE_ANON_KEY' }
 
 Write-Host ""
-Write-Host "Deployment finished." -ForegroundColor Green
+Write-Host "Moodaro v0.0.3 deployment finished." -ForegroundColor Green
 Write-Host "Repository: https://github.com/$Repo"
 Write-Host "Site: https://donacgreece.github.io/World_Mood/"
 Write-Host ""
 
 if (-not ($hasUrl -and $hasKey)) {
-    Write-Host "The application is live, but the shared network still needs Supabase credentials." -ForegroundColor Yellow
-    Write-Host "Run setup-live-backend.ps1 after creating a Supabase project and running supabase/schema.sql." -ForegroundColor Yellow
+    Write-Host "The UI is live, but the shared network still needs Supabase credentials." -ForegroundColor Yellow
+    Write-Host "Run setup-live-backend.ps1 if the GitHub variables/secrets are missing." -ForegroundColor Yellow
 } else {
-    Write-Host "Supabase GitHub configuration is present. Public activity will come only from real submissions." -ForegroundColor Green
+    Write-Host "Supabase configuration is present. Moodaro will use the existing real live data." -ForegroundColor Green
 }

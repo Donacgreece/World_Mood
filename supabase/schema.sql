@@ -1,4 +1,4 @@
--- World Mood v0.0.2
+-- Moodaro v0.0.3
 -- Production-oriented anonymous pulse backend for Supabase.
 -- Run this entire file in the Supabase SQL editor.
 -- Public users never receive actor hashes. Personal journal notes never leave the device.

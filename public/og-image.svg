@@ -1,15 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
-    <linearGradient id="bg" x1="80" y1="20" x2="1100" y2="650" gradientUnits="userSpaceOnUse"><stop stop-color="#0B1020"/><stop offset=".52" stop-color="#172044"/><stop offset="1" stop-color="#301B4B"/></linearGradient>
-    <linearGradient id="wm" x1="94" y1="132" x2="250" y2="288" gradientUnits="userSpaceOnUse"><stop stop-color="#69DFF7"/><stop offset=".5" stop-color="#695CFF"/><stop offset="1" stop-color="#FF7BB4"/></linearGradient>
-    <radialGradient id="glow"><stop stop-color="#69DFF7" stop-opacity=".30"/><stop offset="1" stop-color="#69DFF7" stop-opacity="0"/></radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630"><stop stop-color="#EEF9FF"/><stop offset=".5" stop-color="#F2F0FF"/><stop offset="1" stop-color="#FFF0FA"/></linearGradient>
+    <linearGradient id="text" x1="0" y1="0" x2="900" y2="0"><stop stop-color="#6250FF"/><stop offset=".52" stop-color="#3B82F6"/><stop offset="1" stop-color="#EC4899"/></linearGradient>
   </defs>
   <rect width="1200" height="630" rx="44" fill="url(#bg)"/>
-  <circle cx="910" cy="155" r="390" fill="url(#glow)"/>
-  <circle cx="170" cy="210" r="78" fill="#0B1020" stroke="url(#wm)" stroke-width="14"/>
-  <path d="M112 215h23c9 0 11-28 20-28 9 0 11 49 22 49 10 0 13-35 23-35 8 0 11 14 18 14h13" stroke="url(#wm)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="232" cy="215" r="8" fill="#FF7BB4"/>
-  <text x="100" y="390" fill="#FFFFFF" font-size="78" font-family="Inter,Arial,sans-serif" font-weight="800" letter-spacing="-4">World Mood</text>
-  <text x="104" y="458" fill="#FFFFFF" fill-opacity=".74" font-size="32" font-family="Inter,Arial,sans-serif" font-weight="600">Feel the planet. Together.</text>
-  <text x="104" y="526" fill="#FFFFFF" fill-opacity=".50" font-size="22" font-family="Inter,Arial,sans-serif">Real anonymous check-ins. No fake activity.</text>
+  <circle cx="1045" cy="90" r="260" fill="#67D7F2" opacity=".14"/>
+  <circle cx="1080" cy="620" r="340" fill="#EC4899" opacity=".12"/>
+  <g transform="translate(76 70) scale(1.52)">
+    <ellipse cx="80" cy="153" rx="48" ry="12" fill="none" stroke="#7657FF" stroke-width="8" opacity=".25"/>
+    <path d="M80 12c-35.9 0-65 29.1-65 65 0 47.5 65 84 65 84s65-36.5 65-84c0-35.9-29.1-65-65-65Z" fill="#7657FF"/>
+    <circle cx="80" cy="74" r="43" fill="#fff"/>
+    <path d="M52 68c4.6-8.5 14.5-8.5 19 0M89 68c4.6-8.5 14.5-8.5 19 0" fill="none" stroke="#172039" stroke-width="6" stroke-linecap="round"/>
+    <path d="M58 86c8 17 36 17 44 0" fill="#FF74B7" stroke="#172039" stroke-width="5.5" stroke-linejoin="round"/>
+  </g>
+  <text x="390" y="245" font-family="Inter,Arial,sans-serif" font-size="110" font-weight="900" letter-spacing="-7" fill="#111831">Moodaro</text>
+  <text x="390" y="330" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="850" letter-spacing="-2" fill="#111831">Real people. Real feelings.</text>
+  <text x="390" y="395" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="850" letter-spacing="-2" fill="url(#text)">A brighter tomorrow.</text>
+  <text x="390" y="474" font-family="Inter,Arial,sans-serif" font-size="28" font-weight="600" fill="#66708F">A live social mood map built from real anonymous check-ins.</text>
 </svg>

@@ -6,19 +6,20 @@ export function LaunchScreen() {
 
   useEffect(() => {
     if (!standalone) return
-    const timer = window.setTimeout(() => setVisible(false), 850)
+    const timer = window.setTimeout(() => setVisible(false), 950)
     return () => window.clearTimeout(timer)
   }, [standalone])
 
   if (!visible) return null
 
   return (
-    <div className="launch-screen" aria-hidden="true">
+    <div className="launch-screen moodaro-launch" aria-hidden="true">
       <div className="launch-glow launch-glow-a" />
       <div className="launch-glow launch-glow-b" />
       <img src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" />
-      <strong>World Mood</strong>
-      <span>Feel the planet. Together.</span>
+      <strong>Moodaro</strong>
+      <span>Feel the world together.</span>
+      <small>Real people · Real feelings</small>
     </div>
   )
 }

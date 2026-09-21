@@ -1,9 +1,9 @@
 {
-  "name": "world-mood",
+  "name": "moodaro",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
-  "description": "A privacy-first live social pulse and emotional weather map built from real anonymous check-ins.",
+  "description": "Moodaro is a playful live social mood map built from real anonymous check-ins.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json --noEmit && vite build",

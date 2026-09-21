@@ -3,24 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#f6f8fc" />
+    <meta name="theme-color" content="#f5f6ff" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="description" content="World Mood is a privacy-first live social pulse and emotional weather map built only from real anonymous check-ins." />
-    <meta name="keywords" content="world mood, mood map, social pulse, emotional weather, live mood, anonymous social network, mood journal" />
-    <meta name="author" content="World Mood" />
-    <meta name="application-name" content="World Mood" />
+    <meta name="description" content="Moodaro is a playful live social mood map built only from real anonymous check-ins." />
+    <meta name="keywords" content="Moodaro, mood map, social pulse, emotional weather, live mood, anonymous social app, mood journal" />
+    <meta name="author" content="Moodaro" />
+    <meta name="application-name" content="Moodaro" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="World Mood" />
+    <meta name="apple-mobile-web-app-title" content="Moodaro" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="World Mood · Feel the planet together" />
-    <meta property="og:description" content="A living social pulse built from real anonymous mood check-ins around the world." />
+    <meta property="og:title" content="Moodaro · Feel the world together" />
+    <meta property="og:description" content="Real people, real feelings and a living anonymous mood map of the world." />
     <meta property="og:image" content="/World_Mood/og-image.svg" />
     <meta property="og:url" content="https://donacgreece.github.io/World_Mood/" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="World Mood" />
-    <meta name="twitter:description" content="Feel the planet. Together." />
+    <meta name="twitter:title" content="Moodaro" />
+    <meta name="twitter:description" content="Feel the world together." />
     <meta name="twitter:image" content="/World_Mood/og-image.svg" />
     <link rel="canonical" href="https://donacgreece.github.io/World_Mood/" />
     <link rel="icon" href="/World_Mood/favicon.ico" sizes="any" />
@@ -48,19 +48,19 @@
     <link rel="apple-touch-startup-image" href="/World_Mood/splash/light-1320x2868.png" media="(prefers-color-scheme: light) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)" />
     <link rel="apple-touch-startup-image" href="/World_Mood/splash/dark-1320x2868.png" media="(prefers-color-scheme: dark) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)" />
 
-    <title>World Mood · Feel the planet together</title>
+    <title>Moodaro · Feel the world together</title>
     <script>
       try {
         const theme = localStorage.getItem('worldmood-theme') || 'system';
         const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#070a13' : '#f6f8fc');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#10152f' : '#f5f6ff');
       } catch (_) {}
     </script>
   </head>
   <body>
     <div id="root"></div>
-    <noscript>World Mood needs JavaScript enabled to run.</noscript>
+    <noscript>Moodaro needs JavaScript enabled to run.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
