@@ -7,7 +7,7 @@ $Work = Join-Path $env:TEMP "moodaro-deploy"
 
 Write-Host ""
 Write-Host "Moodaro v0.0.4 deployment" -ForegroundColor Magenta
-Write-Host "Daily Pulse, social loops, circles, questions, rooms, playback, recaps and live Supabase data" -ForegroundColor DarkGray
+Write-Host "Daily Pulse, social loops, questions, rooms, playback, private weekly journey and live Supabase data" -ForegroundColor DarkGray
 Write-Host ""
 
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")

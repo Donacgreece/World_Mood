@@ -10,7 +10,7 @@ This release keeps the existing v0.0.3 live map and Supabase data, then adds vir
 - Optional anonymous 120-character public micro-posts
 - “I feel this too” resonance feed plus community reporting
 - Mood Rooms for shared situations
-- Private Mood Circles with share links and aggregate-only results
+- Private Your Mood Journey / Weekly Pulse recap built from the on-device journal
 - Ask the World anonymous poll
 - Nearby Pulse from the user's latest coarse map area
 - Real-data Mood Waves and Moodaro Moments with sample thresholds
@@ -25,7 +25,7 @@ This release keeps the existing v0.0.3 live map and Supabase data, then adds vir
 
 ## Privacy
 
-Private journal notes remain local on the device. Public micro-posts are optional, anonymous, limited to 120 characters and reject links/email addresses. Exact GPS is not stored. Mood Circles expose group aggregates only.
+Private journal notes remain local on the device. Public micro-posts are optional, anonymous, limited to 120 characters and reject links/email addresses. Exact GPS is not stored. Your private journal and recap data remain on this device.
 
 ## Backend
 

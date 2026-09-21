@@ -45,7 +45,7 @@ export function Settings({ theme, setTheme, canInstall, installed, onInstall, on
         </div>
 
         <div className="settings-card vertical">
-          <div className="settings-label"><ShieldCheck /><div><strong>{copy.privacy}</strong><span>{copy.privacyDetail} Public micro-posts are optional and anonymous. Mood Circles expose only group aggregates.</span></div></div>
+          <div className="settings-label"><ShieldCheck /><div><strong>{copy.privacy}</strong><span>{copy.privacyDetail} Public micro-posts are optional and anonymous. Your journal and personal recaps remain on this device.</span></div></div>
           <button className="danger-button" onClick={onClear}><Trash2 size={17} />{copy.clearData}</button>
         </div>
 

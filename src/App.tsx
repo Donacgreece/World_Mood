@@ -9,7 +9,7 @@ import { MoodComposer } from './components/MoodComposer'
 import { PulseFeed } from './components/PulseFeed'
 import { MapPlayback } from './components/MapPlayback'
 import { MiniPulse } from './components/MiniPulse'
-import { MoodCircles } from './components/MoodCircles'
+import { HomeJourneyCard } from './components/HomeJourneyCard'
 import { SocialInsights } from './components/SocialInsights'
 import { WorldQuestionCard } from './components/WorldQuestionCard'
 import { Settings } from './components/Settings'
@@ -174,7 +174,6 @@ export default function App() {
   const [playbackProgress, setPlaybackProgress] = useState<number | null>(null)
   const [playbackPlaying, setPlaybackPlaying] = useState(false)
   const [miniMode] = useState(() => new URL(window.location.href).searchParams.get('mini') === '1')
-  const [circleCode] = useState(() => new URL(window.location.href).searchParams.get('circle') || '')
 
   useEffect(() => {
     const apply = () => {
@@ -712,7 +711,7 @@ export default function App() {
             </section>
 
             <SocialInsights nearby={nearbyPoint} waves={moodWaves} moments={moodMoments} events={events} />
-            <div className="social-duo-grid"><WorldQuestionCard question={worldQuestion} selected={questionChoice} onVote={vote} /><MoodCircles live={backendHealthy} initialCode={circleCode} /></div>
+            <div className="social-duo-grid"><WorldQuestionCard question={worldQuestion} selected={questionChoice} onVote={vote} /><HomeJourneyCard entries={journal} onOpenJournal={() => { setView('journal'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} onShareWeekly={shareWeekly} onCheckIn={() => { setComposerPreset(null); setComposerOpen(true) }} /></div>
 
             {summary && (
               <div className="world-pulse-card">
