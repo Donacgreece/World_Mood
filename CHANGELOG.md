@@ -27,3 +27,10 @@
 - Unified the page and header top-edge background.
 - Increased header opacity slightly to prevent a visible hue seam.
 - Preserved mobile safe-area and sticky behavior.
+
+
+## 0.0.4-floatingheaderfix
+- Restored the original floating glass desktop header with 10px top breathing room.
+- Removed the full-width pinned-header appearance introduced by the previous patch.
+- Neutralized only the narrow decorative color strip above the floating header.
+- Kept the glass transparency, rounded corners, sticky behavior and mobile safe-area behavior unchanged.

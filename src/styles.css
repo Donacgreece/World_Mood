@@ -861,15 +861,26 @@ body::before {
     var(--bg);
 }
 
+/* Preserve the floating glass header while keeping the tiny strip above it neutral. */
+body::after {
+  content:"";
+  position:fixed;
+  inset:0 0 auto 0;
+  height:20px;
+  z-index:-1;
+  pointer-events:none;
+  background:var(--bg);
+}
+
 .main-area { width:min(1580px,100%); padding-inline:clamp(14px,2.4vw,38px); }
 .desktop-rail { display:none !important; }
 
 .topbar {
   position:sticky;
-  top:0;
+  top:10px;
   z-index:50;
   min-height:72px;
-  margin-top:0;
+  margin-top:10px;
   margin-bottom:18px;
   padding:10px 12px;
   border:1px solid rgba(255,255,255,.72);
