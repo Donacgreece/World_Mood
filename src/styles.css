@@ -83,7 +83,7 @@ body::before {
     var(--bg);
 }
 
-.app-shell { min-height:100dvh; }
+.app-shell { min-height:100dvh; background-color:var(--bg); }
 .main-area { width:min(1540px,100%); margin:0 auto; padding:0 clamp(16px,2.8vw,42px) calc(116px + var(--safe-bottom)); }
 .topbar { position:relative; z-index:35; min-height:86px; padding-top:var(--safe-top); display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .brand { display:inline-flex; align-items:center; gap:11px; min-width:0; }
@@ -193,7 +193,7 @@ body::before {
 .segmented { padding:4px; display:flex; border:1px solid var(--line); border-radius:15px; background:color-mix(in srgb,var(--surface-strong) 88%, transparent); backdrop-filter:blur(24px); box-shadow:0 10px 30px rgba(0,0,0,.07); }
 .segmented button { flex:1; min-width:0; min-height:34px; border:0; background:transparent; border-radius:11px; color:var(--muted); font-size:9px; font-weight:850; cursor:pointer; }
 .segmented button.is-active { color:var(--text); background:var(--surface-strong); box-shadow:0 3px 12px rgba(25,35,60,.08); }
-.selected-area-card { position:absolute; z-index:9; left:50%; bottom:66px; transform:translateX(-50%); width:min(340px,calc(100% - 32px)); display:grid; grid-template-columns:38px minmax(0,1fr) 30px; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:17px; background:color-mix(in srgb,var(--surface-strong) 93%, transparent); backdrop-filter:blur(24px); box-shadow:0 15px 38px rgba(0,0,0,.13); }
+.selected-area-card { position:absolute; z-index:9; left:50%; bottom:66px; transform:translateX(-50%); width:min(340px,calc(100% - 32px)); display:grid; grid-template-columns:38px minmax(0,1fr) 30px; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:17px; background:color-mix(in srgb,var(--surface-strong) 98%, var(--bg)); backdrop-filter:blur(24px); box-shadow:0 15px 38px rgba(0,0,0,.13); }
 .selected-area-card > span { width:38px; height:38px; display:grid; place-items:center; border-radius:13px; font-size:22px; background:var(--surface-soft); }
 .selected-area-card div { min-width:0; display:grid; gap:2px; }
 .selected-area-card strong { font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -866,10 +866,10 @@ body::before {
 
 .topbar {
   position:sticky;
-  top:10px;
+  top:0;
   z-index:50;
   min-height:72px;
-  margin-top:10px;
+  margin-top:0;
   margin-bottom:18px;
   padding:10px 12px;
   border:1px solid rgba(255,255,255,.72);
@@ -1055,6 +1055,22 @@ body::before {
 .map-column {
   padding:0;
   border-radius:34px;
+}
+
+
+@media (min-width:701px) {
+  .main-area { position:relative; }
+  .main-area::before {
+    content:"";
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    height:88px;
+    z-index:34;
+    pointer-events:none;
+    background:var(--bg);
+  }
 }
 
 @media (min-width:981px) {

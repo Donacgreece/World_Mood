@@ -20,3 +20,10 @@
 - Removed Private Mood Circles from the main UI because the share flow was not self-explanatory enough.
 - Replaced the Circles card with a private Your Mood Journey / Weekly Pulse card using only local journal data.
 - Existing circle backend schema remains untouched for backward compatibility.
+
+
+## 0.0.4-headerfix
+- Removed the desktop top gap above the sticky header.
+- Unified the page and header top-edge background.
+- Increased header opacity slightly to prevent a visible hue seam.
+- Preserved mobile safe-area and sticky behavior.
