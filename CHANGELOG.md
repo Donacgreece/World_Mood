@@ -27,3 +27,10 @@
 - Repositioned zoom indicator below the control stack with consistent spacing.
 - Improved hero metric card layout on small screens to 2-up plus full-width last card.
 - Reduced cramped metric text on narrow mobile widths.
+
+
+## 0.0.3-homepolish
+- Balanced spacing between home hero elements on mobile and desktop.
+- Made the left home card match the map column height on desktop.
+- Kept the hero section visible in the first viewport more reliably on larger screens.
+- Reduced crowding in the quick mood widget and hero metric cards.
