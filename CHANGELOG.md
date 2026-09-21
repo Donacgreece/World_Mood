@@ -34,3 +34,10 @@
 - Made the left home card match the map column height on desktop.
 - Kept the hero section visible in the first viewport more reliably on larger screens.
 - Reduced crowding in the quick mood widget and hero metric cards.
+
+
+## 0.0.3-uirefine
+- Added thinner app-colored scrollbars across desktop surfaces.
+- Rebuilt the in-app splash screen with inline Moodaro logo for reliable standalone launch branding.
+- Reduced map pin size and moved the pin tip to the exact map coordinate.
+- Adjusted selected marker readout placement for the new pin geometry.

@@ -359,15 +359,15 @@ export function WorldMap({ points, selectedId, onSelect }: {
                 }}
                 aria-label={`${point.label}, ${emotion.name}, mood ${point.score.toFixed(1)}, ${point.activity} real check-ins`}
               >
-                <circle className="point-hit" r={20} />
-                <circle className="point-aura moodaro-point-aura" r={radius * 2.6} />
+                <circle className="point-hit" r={18} />
+                <circle className="point-aura moodaro-point-aura" r={radius * 2.25} />
                 <g className="moodaro-pin" style={{ '--pin-color': tone } as CSSProperties}>
-                  <path className="moodaro-pin-body" d="M0,-13 C8.3,-13 15,-6.3 15,2 C15,12 0,22 0,22 C0,22 -15,12 -15,2 C-15,-6.3 -8.3,-13 0,-13 Z" />
-                  <circle className="moodaro-pin-face" cx="0" cy="0" r="9.6" />
-                  <text className="moodaro-pin-emoji" x="0" y="4.2" textAnchor="middle">{emotion.emoji}</text>
+                  <path className="moodaro-pin-body" d="M0,0 C0,0 -11,-7.5 -11,-17 C-11,-24.8 -6,-31 0,-31 C6,-31 11,-24.8 11,-17 C11,-7.5 0,0 0,0 Z" />
+                  <circle className="moodaro-pin-face" cx="0" cy="-17.5" r="7.4" />
+                  <text className="moodaro-pin-emoji" x="0" y="-14.2" textAnchor="middle">{emotion.emoji}</text>
                 </g>
                 {active && (
-                  <g className="point-readout moodaro-readout" transform="translate(18,-23)">
+                  <g className="point-readout moodaro-readout" transform="translate(14,-34)">
                     <rect x="0" y="-15" rx="10" width="82" height="29" />
                     <text x="9" y="3">{emotion.name} · {point.score.toFixed(1)}</text>
                   </g>
