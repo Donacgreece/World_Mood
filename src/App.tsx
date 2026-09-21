@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { Activity, ArrowUpRight, Download, Globe2, HeartPulse, Link2, MapPin, Moon, Radio, RefreshCw, Share2, Sparkles, Sun, WifiOff } from 'lucide-react'
+import { Activity, ArrowUpRight, Coffee, Download, Globe2, HeartPulse, Link2, MapPin, Moon, Radio, Share2, Sparkles, Sun, WifiOff } from 'lucide-react'
 import { BottomNav } from './components/BottomNav'
 import { Explore } from './components/Explore'
 import { Journal } from './components/Journal'
@@ -610,11 +610,18 @@ export default function App() {
             <button className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')}>You</button>
           </nav>
           <div className="top-actions">
-            <button className={`network-pill is-${liveState}`} title={copy.realDataHint} onClick={() => void refreshNetwork(false)} aria-label={`${liveLabel}. Refresh live network`}>
-              <span className="live-dot" />
-              <span>{liveLabel}</span>
-              {liveState === 'error' && <RefreshCw size={13} />}
-            </button>
+            <a
+              className="support-pill"
+              href="https://buymeacoffee.com/moodaro"
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label="Support Moodaro on Buy Me a Coffee"
+              title="Support Moodaro on Buy Me a Coffee"
+            >
+              <Coffee size={16} />
+              <span className="support-pill-full">Buy me a coffee</span>
+              <span className="support-pill-short">Coffee</span>
+            </a>
             {!installed && deferredPrompt && <button className="icon-button hide-mobile" onClick={install} aria-label="Install app"><Download size={18} /></button>}
             <button className="icon-button" onClick={quickToggleTheme} aria-label="Toggle light and dark mode">{document.documentElement.dataset.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>
           </div>

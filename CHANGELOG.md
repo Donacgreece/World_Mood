@@ -46,3 +46,10 @@
 - Changed the default map range to 24H.
 - Added a locally saved time picker for Daily Pulse reminders.
 - Reminder scheduling now respects the selected local time and skips days with an existing check-in.
+
+
+## 0.0.4-coffeefix
+- Removed the live-network status pill from the global header.
+- Added a Buy Me a Coffee support button linking to https://buymeacoffee.com/moodaro.
+- Kept live network status inside the product surfaces where it is contextually useful.
+- Added compact responsive support-button behavior for mobile.
